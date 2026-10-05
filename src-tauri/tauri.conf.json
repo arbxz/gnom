@@ -19,14 +19,9 @@
         "minWidth": 940,
         "minHeight": 620,
         "decorations": false,
-        "transparent": true,
+        "transparent": false,
         "shadow": true,
-        "center": true,
-        "windowEffects": {
-          "effects": [
-            "mica"
-          ]
-        }
+        "center": true
       }
     ],
     "security": {

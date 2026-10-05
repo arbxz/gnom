@@ -127,7 +127,7 @@ export function Welcome() {
         <div className="welcome-card glass" aria-live="polite">
           <div className="ring" aria-hidden="true" />
           <h1>Sweeping…</h1>
-          <p>{progress?.phase ?? "Starting"}</p>
+          <p className="phase">{progress?.phase || "Starting"}</p>
           <div className="progress-stats">
             <div>
               <b>{count(progress?.files ?? 0)}</b>

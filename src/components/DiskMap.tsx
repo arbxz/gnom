@@ -53,7 +53,7 @@ function tileBackground(c: Cell, frame: boolean): string | undefined {
   // Fill from the bottom with the junk share, so deep target/ and node_modules still show.
   const pct = Math.min(100, (c.junk.size / Math.max(1, c.size)) * 100);
   const color = CATEGORY[c.junk.category].color;
-  return `linear-gradient(to top, color-mix(in srgb, ${color} 80%, transparent) ${pct}%, var(--c-none) ${pct}%)`;
+  return `linear-gradient(to top, ${color} ${pct}%, var(--c-none) ${pct}%)`;
 }
 
 export function DiskMap() {
@@ -163,7 +163,9 @@ export function DiskMap() {
               if (w < 2 || h < 2) return null;
               const frame = !!d.children;
               const zoomable = !!c.node && c.node.children.length > 0 && !c.category;
-              const cls = c.node === null ? "rest" : frame ? "frame" : `leaf${c.category ? " cat" : ""}`;
+              // Mostly-junk tiles take the category ink so their label stays readable on the colour.
+              const inked = !!c.category || (!!c.junk && c.junk.size / Math.max(1, c.size) >= 0.5);
+              const cls = c.node === null ? "rest" : frame ? "frame" : `leaf${inked ? " cat" : ""}`;
               return (
                 <div
                   key={c.key}

@@ -32,23 +32,24 @@
   --hover: rgba(120, 120, 128, 0.08);
   --press: rgba(120, 120, 128, 0.14);
 
-  /* Pastel status: outline + deep ink. */
-  --danger-line: #e58a87;
-  --danger-text: #a3302a;
-  --danger-hover: rgba(229, 138, 135, 0.12);
-  --ok-line: #7fcca5;
-  --ok-text: #1f6b43;
-  --warn-line: #e9be6e;
-  --warn-text: #7a4e00;
+  /* Status: saturated outline (500) + deep ink (700) on light. */
+  --danger-line: #ef4444;
+  --danger-text: #b91c1c;
+  --danger-hover: rgba(239, 68, 68, 0.1);
+  --ok-line: #22c55e;
+  --ok-text: #15803d;
+  --warn-line: #f59e0b;
+  --warn-text: #b45309;
 
-  /* Category pastels: validated set (adjacent CVD dE 8.1, normal-vision 15.1); always shown with labels. */
-  --c-deps: #6f9fe8;
-  --c-build: #ee8f63;
-  --c-cache: #4fbf95;
-  --c-global: #9d86ea;
-  --c-large: #e889b0;
+  /* Categories, light: full-saturation 500s. Validated: adjacent CVD dE 11.5, normal-vision 22.6;
+     orange/green sit under 3:1 on white, so every use carries a text label. */
+  --c-deps: #3b82f6;
+  --c-build: #f97316;
+  --c-cache: #10b981;
+  --c-global: #8b5cf6;
+  --c-large: #ec4899;
   --c-none: rgba(120, 120, 128, 0.16);
-  --on-cat: #1c1c1e;
+  --on-cat: #1c1917;
 
   --r: 9px;
   --r-lg: 15px;
@@ -83,9 +84,20 @@
     --line-strong: #f5f5f4;
     --hover: rgba(255, 255, 255, 0.06);
     --press: rgba(255, 255, 255, 0.1);
-    --danger-text: #f6b0ae;
-    --ok-text: #a8e3c5;
-    --warn-text: #f5d39a;
+    --danger-text: #fca5a5;
+    --ok-text: #86efac;
+    --warn-text: #fcd34d;
+    --danger-line: #f87171;
+    --danger-hover: rgba(248, 113, 113, 0.12);
+    --ok-line: #4ade80;
+    --warn-line: #fbbf24;
+    /* Categories, dark: lighter and ~20% less saturated so they glow without vibrating.
+       All checks pass on stone-900 (band, chroma, CVD dE 10.2, normal 18.9, >=3:1). */
+    --c-deps: #4a8af2;
+    --c-build: #e2681f;
+    --c-cache: #1fae7c;
+    --c-global: #9478f2;
+    --c-large: #e8579f;
     --c-none: rgba(120, 113, 108, 0.24);
   }
 }
@@ -113,9 +125,20 @@
   --line-strong: #f5f5f4;
   --hover: rgba(255, 255, 255, 0.06);
   --press: rgba(255, 255, 255, 0.1);
-  --danger-text: #f6b0ae;
-  --ok-text: #a8e3c5;
-  --warn-text: #f5d39a;
+  --danger-text: #fca5a5;
+  --ok-text: #86efac;
+  --warn-text: #fcd34d;
+  --danger-line: #f87171;
+  --danger-hover: rgba(248, 113, 113, 0.12);
+  --ok-line: #4ade80;
+  --warn-line: #fbbf24;
+  /* Categories, dark: lighter and ~20% less saturated so they glow without vibrating.
+     All checks pass on stone-900 (band, chroma, CVD dE 10.2, normal 18.9, >=3:1). */
+  --c-deps: #4a8af2;
+  --c-build: #e2681f;
+  --c-cache: #1fae7c;
+  --c-global: #9478f2;
+  --c-large: #e8579f;
   --c-none: rgba(120, 113, 108, 0.24);
 }
 

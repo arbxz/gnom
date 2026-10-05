@@ -4,19 +4,28 @@
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
   --mono: "JetBrains Mono", "SF Mono", "Cascadia Code", Consolas, monospace;
 
-  --bg: #f2f2f7;
-  --glass: rgba(255, 255, 255, 0.62);
-  --glass-strong: rgba(255, 255, 255, 0.86);
-  --glass-border: rgba(60, 60, 67, 0.12);
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.05);
-  --blur: 24px;
+  --bg: #eef0f6;
+  /* Glass recipe: low-alpha fill, heavy blur + saturation, light rim, specular top edge. */
+  --glass: rgba(255, 255, 255, 0.38);
+  --glass-strong: rgba(255, 255, 255, 0.72);
+  --glass-control: rgba(255, 255, 255, 0.18);
+  --glass-border: rgba(255, 255, 255, 0.65);
+  --specular: inset 0 1.5px 0 rgba(255, 255, 255, 0.9), inset 0 -1px 0 rgba(255, 255, 255, 0.25);
+  --shadow: 0 1px 1px rgba(30, 30, 60, 0.04), 0 12px 32px rgba(30, 30, 60, 0.1);
+  --blur: 22px;
+  /* Backdrop light: soft pastel orbs the glass refracts. */
+  --orb-1: #b9cdfb;
+  --orb-2: #e6c6f3;
+  --orb-3: #fcd3bd;
+  --orb-4: #bfe9d8;
+  --orb-opacity: 0.9;
 
   --text: #1c1c1e;
   --text-2: #48484d;
   --text-3: #6a6a70;
   --separator: rgba(60, 60, 67, 0.12);
   /* Outlines: hairline for resting controls, stronger for selected/primary. */
-  --line: rgba(60, 60, 67, 0.22);
+  --line: rgba(60, 60, 67, 0.2);
   --line-strong: #1c1c1e;
   --hover: rgba(120, 120, 128, 0.08);
   --press: rgba(120, 120, 128, 0.14);
@@ -39,20 +48,28 @@
   --c-none: rgba(120, 120, 128, 0.16);
   --on-cat: #1c1c1e;
 
-  --r: 12px;
-  --r-lg: 18px;
-  --r-xl: 22px;
+  --r: 14px;
+  --r-lg: 22px;
+  --r-xl: 28px;
+  --pill: 999px;
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --bg: #000000;
-    --glass: rgba(28, 28, 30, 0.62);
-    --glass-strong: rgba(36, 36, 40, 0.9);
-    --glass-border: rgba(255, 255, 255, 0.1);
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
+    --bg: #07070b;
+    --glass: rgba(40, 40, 52, 0.36);
+    --glass-strong: rgba(36, 36, 46, 0.78);
+    --glass-control: rgba(255, 255, 255, 0.03);
+    --glass-border: rgba(255, 255, 255, 0.14);
+    --specular: inset 0 1px 0 rgba(255, 255, 255, 0.16), inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+    --shadow: 0 1px 1px rgba(0, 0, 0, 0.3), 0 14px 36px rgba(0, 0, 0, 0.45);
+    --orb-1: #2b3d78;
+    --orb-2: #4a2a62;
+    --orb-3: #5a3326;
+    --orb-4: #1d4a3e;
+    --orb-opacity: 0.75;
     --text: #f5f5f7;
     --text-2: #c7c7cc;
     --text-3: #a1a1a8;
@@ -69,11 +86,18 @@
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #000000;
-  --glass: rgba(28, 28, 30, 0.62);
-  --glass-strong: rgba(36, 36, 40, 0.9);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
+  --bg: #07070b;
+  --glass: rgba(40, 40, 52, 0.36);
+  --glass-strong: rgba(36, 36, 46, 0.78);
+  --glass-control: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --specular: inset 0 1px 0 rgba(255, 255, 255, 0.16), inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+  --shadow: 0 1px 1px rgba(0, 0, 0, 0.3), 0 14px 36px rgba(0, 0, 0, 0.45);
+  --orb-1: #2b3d78;
+  --orb-2: #4a2a62;
+  --orb-3: #5a3326;
+  --orb-4: #1d4a3e;
+  --orb-opacity: 0.75;
   --text: #f5f5f7;
   --text-2: #c7c7cc;
   --text-3: #a1a1a8;
@@ -91,10 +115,24 @@
 /* iOS "Reduce Transparency": solid surfaces, no blur — also the fast path on GPU-less machines. */
 :root[data-solid] {
   --glass: var(--glass-strong);
+  --glass-control: transparent;
   --blur: 0px;
+  --orb-opacity: 0.35;
 }
 :root[data-solid] .glass {
   backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --glass: var(--glass-strong);
+    --glass-control: transparent;
+    --orb-opacity: 0.35;
+  }
+  .glass {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
 }
 
 * {
@@ -136,6 +174,42 @@ select {
   inset: 0;
   z-index: -1;
   background: var(--bg);
+  overflow: hidden;
+}
+/* Solid circles, blurred once and never animated: cheap, and they give the glass something to bend. */
+.wallpaper i {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: var(--orb-opacity);
+}
+.wallpaper i:nth-child(1) {
+  width: 46vw;
+  height: 46vw;
+  left: -8vw;
+  top: -14vw;
+  background: var(--orb-1);
+}
+.wallpaper i:nth-child(2) {
+  width: 38vw;
+  height: 38vw;
+  right: -6vw;
+  top: 4vh;
+  background: var(--orb-2);
+}
+.wallpaper i:nth-child(3) {
+  width: 34vw;
+  height: 34vw;
+  left: 30vw;
+  bottom: -16vw;
+  background: var(--orb-3);
+}
+.wallpaper i:nth-child(4) {
+  width: 30vw;
+  height: 30vw;
+  right: 4vw;
+  bottom: -8vw;
+  background: var(--orb-4);
 }
 :root[data-native] .wallpaper {
   opacity: 0.6;
@@ -143,10 +217,10 @@ select {
 
 .glass {
   background: var(--glass);
-  backdrop-filter: blur(var(--blur)) saturate(170%);
-  -webkit-backdrop-filter: blur(var(--blur)) saturate(170%);
+  backdrop-filter: blur(var(--blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(180%);
   border: 1px solid var(--glass-border);
-  box-shadow: var(--shadow);
+  box-shadow: var(--specular), var(--shadow);
 }
 
 .mono {
@@ -186,7 +260,7 @@ select {
   gap: 10px;
   padding-left: 14px;
   border-width: 0 0 1px;
-  box-shadow: none;
+  box-shadow: var(--specular);
   z-index: 5;
 }
 .titlebar .brand {
@@ -208,6 +282,7 @@ select {
   padding: 0 8px;
   border-radius: 999px;
   border: 1px solid var(--line);
+  background: var(--glass-control);
   color: var(--text-2);
   font-size: 11.5px;
   font-weight: 550;
@@ -258,7 +333,7 @@ select {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  overflow: auto;
+  overflow: hidden auto;
 }
 .sidebar h6 {
   margin: 12px 10px 4px;
@@ -275,7 +350,7 @@ select {
   min-height: 38px;
   padding: 0 10px 0 6px;
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: 12px;
   background: transparent;
   cursor: pointer;
   text-align: left;
@@ -285,8 +360,9 @@ select {
   background: var(--hover);
 }
 .nav-item[aria-current="page"] {
-  border-color: var(--line);
-  background: var(--glass-strong);
+  border-color: var(--glass-border);
+  background: var(--glass-control);
+  box-shadow: var(--specular), 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 .nav-item .label {
   flex: 1;
@@ -300,12 +376,14 @@ select {
 .app-icon {
   width: 26px;
   height: 26px;
-  border-radius: 7px;
+  border-radius: 8px;
   display: grid;
   place-items: center;
   color: var(--text);
   flex: none;
-  border: 1.25px solid var(--icon-line, var(--line));
+  border: 1px solid var(--icon-line, var(--glass-border));
+  background: var(--glass-control);
+  box-shadow: var(--specular);
 }
 .sidebar .spacer {
   flex: 1;
@@ -314,7 +392,9 @@ select {
   margin: 8px 6px 2px;
   padding: 10px;
   border-radius: var(--r);
-  border: 1px solid var(--separator);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-control);
+  box-shadow: var(--specular);
   font-size: 12px;
 }
 
@@ -360,9 +440,10 @@ select {
   gap: 6px;
   min-height: 34px;
   padding: 0 14px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: transparent;
+  border-radius: var(--pill);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-control);
+  box-shadow: var(--specular);
   font-weight: 560;
   cursor: pointer;
   white-space: nowrap;
@@ -382,14 +463,14 @@ select {
   background: transparent;
 }
 .btn.primary {
-  border: 1.5px solid var(--line-strong);
+  border: 1px solid var(--line-strong);
 }
 .btn.tinted {
-  border-color: var(--line);
+  border-color: var(--glass-border);
 }
 .btn.danger,
 .btn.danger-tinted {
-  border: 1.5px solid var(--danger-line);
+  border: 1px solid var(--danger-line);
   color: var(--danger-text);
 }
 .btn.danger-tinted {
@@ -401,19 +482,21 @@ select {
 }
 .btn.plain {
   border-color: transparent;
+  background: transparent;
+  box-shadow: none;
   padding: 0 8px;
 }
 .btn.sm {
   min-height: 28px;
   padding: 0 10px;
   font-size: 12.5px;
-  border-radius: 8px;
+  border-radius: var(--pill);
 }
 .btn.lg {
   min-height: 44px;
   padding: 0 22px;
   font-size: 15px;
-  border-radius: 13px;
+  border-radius: var(--pill);
 }
 .icon-btn {
   width: 32px;
@@ -421,7 +504,7 @@ select {
   display: inline-grid;
   place-items: center;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--pill);
   background: transparent;
   color: var(--text-2);
   cursor: pointer;
@@ -434,8 +517,10 @@ select {
 .segmented {
   display: inline-flex;
   padding: 2px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
+  border-radius: var(--pill);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-control);
+  box-shadow: var(--specular);
   gap: 2px;
 }
 .segmented button {
@@ -443,7 +528,7 @@ select {
   background: transparent;
   min-height: 26px;
   padding: 0 12px;
-  border-radius: 7px;
+  border-radius: var(--pill);
   font-size: 12.5px;
   font-weight: 560;
   cursor: pointer;
@@ -455,6 +540,7 @@ select {
 }
 .segmented button[aria-pressed="true"] {
   border-color: var(--line-strong);
+  background: var(--glass-control);
   color: var(--text);
 }
 
@@ -464,8 +550,9 @@ select {
   gap: 6px;
   height: 34px;
   padding: 0 10px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
+  border-radius: var(--pill);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-control);
   color: var(--text-3);
   min-width: 220px;
 }
@@ -483,9 +570,9 @@ select {
 .field {
   height: 34px;
   padding: 0 10px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: transparent;
+  border-radius: var(--pill);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-control);
   outline: 0;
   min-width: 0;
 }
@@ -499,7 +586,7 @@ select {
   height: 28px;
   flex: none;
   border-radius: 999px;
-  border: 1.5px solid var(--line);
+  border: 1px solid var(--line);
   background: transparent;
   cursor: pointer;
   transition: border-color 0.25s var(--ease);
@@ -512,7 +599,7 @@ select {
   width: 19px;
   height: 19px;
   border-radius: 50%;
-  border: 1.5px solid var(--text-3);
+  border: 1px solid var(--text-3);
   transition: transform 0.25s var(--ease), background 0.25s, border-color 0.25s;
 }
 .switch[aria-checked="true"] {
@@ -531,7 +618,7 @@ select {
   margin: 0;
   flex: none;
   border-radius: 50%;
-  border: 1.5px solid var(--line);
+  border: 1px solid var(--line);
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -548,7 +635,7 @@ select {
   content: "";
   width: 9px;
   height: 5px;
-  border: 1.75px solid var(--line-strong);
+  border: 1.5px solid var(--line-strong);
   border-top: 0;
   border-right: 0;
   transform: translateY(-1px) rotate(-45deg);
@@ -556,7 +643,7 @@ select {
 .check:indeterminate::after {
   content: "";
   width: 9px;
-  height: 1.75px;
+  height: 1.5px;
   background: var(--line-strong);
   border-radius: 1px;
 }
@@ -679,7 +766,8 @@ select {
   gap: 10px;
   padding: 8px 12px;
   border-radius: var(--r);
-  border: 1px solid var(--separator);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-control);
   margin-right: 14px;
 }
 .dot {
@@ -796,8 +884,8 @@ select {
   transition: border-color 0.2s, transform 0.2s var(--ease);
 }
 .tile:hover {
-  border-color: var(--line);
-  transform: translateY(-1px);
+  background: var(--glass-strong);
+  transform: translateY(-2px);
 }
 .tile .value {
   font-size: 22px;
@@ -819,7 +907,7 @@ select {
 }
 .welcome-card {
   width: min(560px, 100%);
-  border-radius: 26px;
+  border-radius: var(--r-xl);
   padding: 34px 32px 28px;
   text-align: center;
 }
@@ -859,7 +947,7 @@ select {
   place-items: center;
   width: 20px;
   height: 20px;
-  border-radius: 50%;
+  border-radius: var(--pill);
 }
 .root-chip button:hover {
   background: var(--hover);
@@ -894,7 +982,8 @@ select {
 .progress-stats div {
   padding: 10px;
   border-radius: var(--r);
-  border: 1px solid var(--separator);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-control);
 }
 .progress-stats b {
   display: block;
@@ -927,7 +1016,7 @@ select {
   align-items: center;
   gap: 14px;
   padding: 8px 8px 8px 18px;
-  border-radius: 18px;
+  border-radius: var(--pill);
   background: var(--glass-strong);
   animation: rise 0.35s var(--ease);
   z-index: 10;
@@ -949,7 +1038,9 @@ select {
 .scrim {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.22);
+  background: rgba(0, 0, 0, 0.16);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   display: grid;
   place-items: center;
   z-index: 50;
@@ -966,7 +1057,7 @@ select {
   max-height: min(680px, 100%);
   display: flex;
   flex-direction: column;
-  border-radius: 20px;
+  border-radius: var(--r-xl);
   background: var(--glass-strong);
   animation: pop 0.3s var(--ease);
   overflow: hidden;
@@ -1014,7 +1105,7 @@ select {
   align-items: flex-start;
   gap: 10px;
   padding: 12px 14px;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   width: 340px;
   background: var(--glass-strong);
   animation: slide 0.35s var(--ease);
@@ -1066,7 +1157,7 @@ select {
   border: 0;
   background: transparent;
   padding: 3px 7px;
-  border-radius: 6px;
+  border-radius: var(--pill);
   cursor: pointer;
   color: var(--text-2);
   font-weight: 560;
@@ -1232,4 +1323,116 @@ pre.snippet {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Continuous (squircle) corners like iOS where the engine supports them; plain radii elsewhere. */
+@supports (corner-shape: squircle) {
+  .glass,
+  .card,
+  .tile,
+  .list,
+  .hero,
+  .sheet,
+  .nav-item,
+  .app-icon,
+  .sub-row,
+  .disk-meter,
+  .tm-node,
+  .treemap,
+  pre.snippet {
+    corner-shape: squircle;
+  }
+  :root {
+    --r: 18px;
+    --r-lg: 28px;
+    --r-xl: 36px;
+  }
+  .nav-item {
+    border-radius: 16px;
+  }
+  .app-icon {
+    border-radius: 11px;
+  }
+  .tm-node {
+    border-radius: 9px;
+  }
+}
+
+/* ---------- Cursor light ----------
+   main.tsx writes --mx/--my (px) on the hovered surfaces and sets data-lit.
+   ::after is a soft specular bloom; ::before is a rim that brightens nearest the pointer. */
+.glass,
+.btn,
+.nav-item {
+  position: relative;
+}
+/* Keep the floating glass where it was; the rule above would otherwise make them relative. */
+.tray {
+  position: absolute;
+}
+.tm-tip {
+  position: fixed;
+}
+.glass::after,
+.btn::after,
+.nav-item::after,
+.glass::before,
+.btn::before,
+.nav-item::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  corner-shape: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s var(--ease);
+}
+.glass::after,
+.btn::after,
+.nav-item::after {
+  background: radial-gradient(var(--lit-size, 220px) circle at var(--mx, 50%) var(--my, 50%), var(--lit-fill), transparent 70%);
+  mix-blend-mode: soft-light;
+}
+.glass::before,
+.btn::before,
+.nav-item::before {
+  padding: 1px;
+  background: radial-gradient(var(--lit-size, 220px) circle at var(--mx, 50%) var(--my, 50%), var(--lit-rim), transparent 65%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+[data-lit]::after,
+[data-lit]::before {
+  opacity: 1;
+}
+.btn,
+.nav-item {
+  --lit-size: 90px;
+}
+.sidebar,
+.list,
+.map-frame {
+  --lit-size: 320px;
+}
+:root {
+  --lit-fill: rgba(255, 255, 255, 0.85);
+  --lit-rim: rgba(255, 255, 255, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --lit-fill: rgba(255, 255, 255, 0.28);
+    --lit-rim: rgba(255, 255, 255, 0.55);
+  }
+}
+:root[data-theme="dark"] {
+  --lit-fill: rgba(255, 255, 255, 0.28);
+  --lit-rim: rgba(255, 255, 255, 0.55);
+}
+:root[data-solid] .glass::after,
+:root[data-solid] .glass::before,
+:root[data-solid] .btn::after,
+:root[data-solid] .btn::before {
+  display: none;
 }

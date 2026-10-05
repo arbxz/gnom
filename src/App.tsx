@@ -29,7 +29,12 @@ function Frame() {
   const bare = (!result || scanning) && view !== "settings" && view !== "docker";
   return (
     <div className="app">
-      <div className="wallpaper" aria-hidden="true" />
+      <div className="wallpaper" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+        <i />
+      </div>
       <TitleBar />
       <Sidebar />
       <main className="main">

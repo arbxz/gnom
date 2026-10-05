@@ -6,15 +6,9 @@ import { CATEGORY, STACK_LABEL } from "../lib/meta";
 import type { Finding } from "../lib/types";
 import { useStore } from "../state";
 
+/** The gnom creature. Drawn as a mask so it takes the current text colour in light and dark mode. */
 export function Logo({ size = 22 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth={3.5} strokeLinejoin="round" strokeLinecap="round" aria-hidden="true">
-      <rect x="3" y="3" width="58" height="58" rx="15" strokeWidth={2.5} />
-      <path d="M32 13 L45 42 H19 Z" />
-      <circle cx="32" cy="12" r="2.5" fill="currentColor" />
-      <path d="M17 47 H47" />
-    </svg>
-  );
+  return <span className="logo" style={{ width: size, height: size }} aria-hidden="true" />;
 }
 
 /** Outlined icon tile; a category passes its pastel as the outline colour. */

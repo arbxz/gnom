@@ -1475,3 +1475,11 @@ pre.snippet {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.logo {
+  display: inline-block;
+  flex: none;
+  background: currentColor;
+  -webkit-mask: url("/gnom-mark.png") center / contain no-repeat;
+  mask: url("/gnom-mark.png") center / contain no-repeat;
+}

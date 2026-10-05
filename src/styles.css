@@ -926,11 +926,14 @@ select {
 .welcome {
   min-height: 100%;
   display: grid;
+  /* A fixed track: an auto column would size itself to the longest unwrapped path and drag the card sideways. */
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   padding: 24px;
 }
 .welcome-card {
   width: min(560px, 100%);
+  min-width: 0;
   border-radius: var(--r-xl);
   padding: 34px 32px 28px;
   text-align: center;

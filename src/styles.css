@@ -57,65 +57,66 @@
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
+/* Dark mode sits on Tailwind's warm "stone" scale (950 bg, 800/900 glass, 50/300/400 text). */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --bg: #07070b;
-    --glass: rgba(40, 40, 52, 0.36);
-    --glass-strong: rgba(36, 36, 46, 0.78);
+    --bg: #0c0a09;
+    --glass: rgba(41, 37, 36, 0.4);
+    --glass-strong: rgba(28, 25, 23, 0.82);
     --glass-control: rgba(255, 255, 255, 0.03);
     --glass-border: rgba(255, 255, 255, 0.14);
     --panel-border: rgba(255, 255, 255, 0.06);
     --panel-specular: inset 0 1px 0 rgba(255, 255, 255, 0.07);
     --specular: inset 0 1px 0 rgba(255, 255, 255, 0.16), inset 0 -1px 0 rgba(255, 255, 255, 0.04);
     --shadow: 0 1px 1px rgba(0, 0, 0, 0.3), 0 14px 36px rgba(0, 0, 0, 0.45);
-    --orb-1: #1d1d25;
-    --orb-2: #15151b;
-    --orb-3: #23232c;
-    --orb-4: #111116;
+    --orb-1: #292524;
+    --orb-2: #1c1917;
+    --orb-3: #302b28;
+    --orb-4: #0f0d0c;
     --orb-opacity: 0.75;
-    --text: #f5f5f7;
-    --text-2: #c7c7cc;
-    --text-3: #a1a1a8;
+    --text: #fafaf9;
+    --text-2: #d6d3d1;
+    --text-3: #a8a29e;
     --separator: rgba(255, 255, 255, 0.09);
     --line: rgba(255, 255, 255, 0.2);
-    --line-strong: #f5f5f7;
+    --line-strong: #f5f5f4;
     --hover: rgba(255, 255, 255, 0.06);
     --press: rgba(255, 255, 255, 0.1);
     --danger-text: #f6b0ae;
     --ok-text: #a8e3c5;
     --warn-text: #f5d39a;
-    --c-none: rgba(120, 120, 128, 0.22);
+    --c-none: rgba(120, 113, 108, 0.24);
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #07070b;
-  --glass: rgba(40, 40, 52, 0.36);
-  --glass-strong: rgba(36, 36, 46, 0.78);
+  --bg: #0c0a09;
+  --glass: rgba(41, 37, 36, 0.4);
+  --glass-strong: rgba(28, 25, 23, 0.82);
   --glass-control: rgba(255, 255, 255, 0.03);
   --glass-border: rgba(255, 255, 255, 0.14);
   --panel-border: rgba(255, 255, 255, 0.06);
   --panel-specular: inset 0 1px 0 rgba(255, 255, 255, 0.07);
   --specular: inset 0 1px 0 rgba(255, 255, 255, 0.16), inset 0 -1px 0 rgba(255, 255, 255, 0.04);
   --shadow: 0 1px 1px rgba(0, 0, 0, 0.3), 0 14px 36px rgba(0, 0, 0, 0.45);
-  --orb-1: #1d1d25;
-  --orb-2: #15151b;
-  --orb-3: #23232c;
-  --orb-4: #111116;
+  --orb-1: #292524;
+  --orb-2: #1c1917;
+  --orb-3: #302b28;
+  --orb-4: #0f0d0c;
   --orb-opacity: 0.75;
-  --text: #f5f5f7;
-  --text-2: #c7c7cc;
-  --text-3: #a1a1a8;
+  --text: #fafaf9;
+  --text-2: #d6d3d1;
+  --text-3: #a8a29e;
   --separator: rgba(255, 255, 255, 0.09);
   --line: rgba(255, 255, 255, 0.2);
-  --line-strong: #f5f5f7;
+  --line-strong: #f5f5f4;
   --hover: rgba(255, 255, 255, 0.06);
   --press: rgba(255, 255, 255, 0.1);
   --danger-text: #f6b0ae;
   --ok-text: #a8e3c5;
   --warn-text: #f5d39a;
-  --c-none: rgba(120, 120, 128, 0.22);
+  --c-none: rgba(120, 113, 108, 0.24);
 }
 
 /* iOS "Reduce Transparency": solid surfaces, no blur — also the fast path on GPU-less machines. */

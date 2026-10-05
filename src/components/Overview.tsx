@@ -78,7 +78,7 @@ export function Overview() {
         })}
         {docker?.running && (
           <button className="tile glass" onClick={() => setView("docker")}>
-            <AppIcon icon={Container} color="#0a9fd8" size={30} />
+            <AppIcon icon={Container} size={30} />
             <div>
               <div className="value">{bytes(dockerReclaim)}</div>
               <div style={{ fontWeight: 600 }}>Docker</div>

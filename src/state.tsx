@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { api } from "./lib/api";
 import { bytes, daysSince } from "./lib/format";
 import { useSettings, type Settings } from "./lib/settings";
-import type { DockerReport, Finding, ScanProgress, ScanResult, TreeNode } from "./lib/types";
+import type { CleanProgress, DockerReport, Finding, ScanProgress, ScanResult, TreeNode } from "./lib/types";
 
 export type View = "overview" | "projects" | "caches" | "docker" | "large" | "map" | "settings";
 
@@ -31,6 +31,7 @@ interface Store {
   confirmOpen: boolean;
   setConfirmOpen: (v: boolean) => void;
   cleaning: boolean;
+  cleanProgress: CleanProgress | null;
   cleanSelected: () => Promise<void>;
   isStale: (lastActive: number | null) => boolean;
   docker: DockerReport | null;
@@ -50,6 +51,7 @@ export function useStore(): Store {
 }
 
 const norm = (p: string) => p.toLowerCase();
+const sum = (items: { size: number }[]) => items.reduce((a, b) => a + b.size, 0);
 
 /** Removes deleted paths from the size tree and shrinks every ancestor accordingly. */
 function pruneTree(nodes: TreeNode[], removed: Map<string, number>): TreeNode[] {
@@ -73,6 +75,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [cleaning, setCleaning] = useState(false);
+  const [cleanProgress, setCleanProgress] = useState<CleanProgress | null>(null);
   const [docker, setDocker] = useState<DockerReport | null>(null);
   const [dockerLoading, setDockerLoading] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -143,10 +146,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const items = selectedFindings;
     if (!items.length) return;
     setCleaning(true);
+    setCleanProgress({ freed: 0, total: sum(items), index: 0, count: items.length, current: items[0].path });
     try {
       const outcomes = await api.clean(
-        items.map((f) => f.path),
+        items.map((f) => ({ path: f.path, size: f.size })),
         settings.toTrash,
+        setCleanProgress,
       );
       const ok = new Set(outcomes.filter((o) => o.ok).map((o) => o.path));
       const failed = outcomes.filter((o) => !o.ok);
@@ -177,6 +182,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       toast({ kind: "error", title: "Clean failed", body: String(e) });
     } finally {
       setCleaning(false);
+      setCleanProgress(null);
     }
   }, [selectedFindings, settings.toTrash, toast]);
 
@@ -200,6 +206,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     confirmOpen,
     setConfirmOpen,
     cleaning,
+    cleanProgress,
     cleanSelected,
     isStale,
     docker,

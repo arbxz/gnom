@@ -183,7 +183,7 @@ export function DiskMap() {
                   }}
                 >
                   {w > 54 && h > 16 && (
-                    <span className="tm-label" style={c.category && !frame ? { textShadow: "0 1px 2px rgba(0,0,0,.35)" } : undefined}>
+                    <span className="tm-label">
                       {c.name}
                       {w > 110 && <small>{bytes(c.size)}</small>}
                     </span>

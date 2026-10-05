@@ -11,13 +11,13 @@ export function Logo({ size = 22 }: { size?: number }) {
     <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">
       <defs>
         <linearGradient id="gnom-g" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#5e9bff" />
-          <stop offset="1" stopColor="#7b5cff" />
+          <stop offset="0" stopColor="#6e6e75" />
+          <stop offset="1" stopColor="#1c1c1e" />
         </linearGradient>
       </defs>
       <rect width="64" height="64" rx="15" fill="url(#gnom-g)" />
       <path d="M32 9 L47 42 H17 Z" fill="#fff" opacity="0.96" />
-      <circle cx="32" cy="9" r="3.4" fill="#ffd166" />
+      <circle cx="32" cy="9" r="3.4" fill="#f6b0ae" />
       <rect x="14" y="41" width="36" height="7" rx="3.5" fill="#fff" opacity="0.7" />
       <circle cx="26" cy="54" r="2.4" fill="#fff" opacity="0.85" />
       <circle cx="38" cy="54" r="2.4" fill="#fff" opacity="0.85" />
@@ -25,9 +25,10 @@ export function Logo({ size = 22 }: { size?: number }) {
   );
 }
 
-export function AppIcon({ icon: Icon, color, size = 26 }: { icon: LucideIcon; color: string; size?: number }) {
+/** iOS Settings-style icon tile: a graphite gradient by default, or a pastel fill when `color` is given. */
+export function AppIcon({ icon: Icon, color, size = 26 }: { icon: LucideIcon; color?: string; size?: number }) {
   return (
-    <span className="app-icon" style={{ background: color, width: size, height: size }}>
+    <span className={`app-icon${color ? "" : " mono"}`} style={{ background: color, width: size, height: size }}>
       <Icon size={Math.round(size * 0.6)} strokeWidth={2.2} aria-hidden="true" />
     </span>
   );

@@ -1,5 +1,6 @@
 import type {
   CleanOutcome,
+  CleanProgress,
   DepReport,
   DockerActionKind,
   DockerReport,
@@ -43,12 +44,14 @@ export const api = {
     else (await mock()).cancelMock();
   },
 
-  async clean(paths: string[], toTrash: boolean): Promise<CleanOutcome[]> {
-    if (!isNative) {
-      await new Promise((r) => setTimeout(r, 900));
-      return paths.map((path) => ({ path, ok: true, error: null }));
+  async clean(items: { path: string; size: number }[], toTrash: boolean, onProgress: (p: CleanProgress) => void): Promise<CleanOutcome[]> {
+    if (!isNative) return (await mock()).mockClean(items, onProgress);
+    const unlisten = await listen<CleanProgress>("clean-progress", onProgress);
+    try {
+      return await invoke<CleanOutcome[]>("clean_paths", { items, toTrash });
+    } finally {
+      unlisten();
     }
-    return invoke("clean_paths", { paths, toTrash });
   },
 
   async runCacheCommand(id: string): Promise<string> {

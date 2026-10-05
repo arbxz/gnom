@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
+import type { CleanProgress } from "../lib/types";
 import { api, isNative } from "../lib/api";
 import { bytes, count } from "../lib/format";
 import { CATEGORIES, CATEGORY } from "../lib/meta";
@@ -56,13 +57,13 @@ export function TitleBar() {
   );
 }
 
-const NAV: { id: View; label: string; icon: typeof LayoutDashboard; color: string }[] = [
-  { id: "overview", label: "Overview", icon: LayoutDashboard, color: "#007aff" },
-  { id: "projects", label: "Projects", icon: FolderGit2, color: "#ff9500" },
-  { id: "caches", label: "Package caches", icon: Database, color: "#5856d6" },
-  { id: "docker", label: "Docker", icon: Container, color: "#0a9fd8" },
-  { id: "large", label: "Heavy files", icon: FileWarning, color: "#ff2d55" },
-  { id: "map", label: "Disk map", icon: LayoutGrid, color: "#34a853" },
+const NAV: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "projects", label: "Projects", icon: FolderGit2 },
+  { id: "caches", label: "Package caches", icon: Database },
+  { id: "docker", label: "Docker", icon: Container },
+  { id: "large", label: "Heavy files", icon: FileWarning },
+  { id: "map", label: "Disk map", icon: LayoutGrid },
 ];
 
 export function Sidebar() {
@@ -82,7 +83,7 @@ export function Sidebar() {
       <h6>Library</h6>
       {NAV.map((n) => (
         <button key={n.id} className="nav-item" aria-current={view === n.id ? "page" : undefined} onClick={() => setView(n.id)}>
-          <AppIcon icon={n.icon} color={n.color} />
+          <AppIcon icon={n.icon} />
           <span className="label">{n.label}</span>
           {meta[n.id] && <span className="meta num">{meta[n.id]}</span>}
         </button>
@@ -105,7 +106,7 @@ export function Sidebar() {
         </div>
       )}
       <button className="nav-item" aria-current={view === "settings" ? "page" : undefined} onClick={() => setView("settings")}>
-        <AppIcon icon={SettingsIcon} color="#8e8e93" />
+        <AppIcon icon={SettingsIcon} />
         <span className="label">Settings</span>
       </button>
     </nav>
@@ -215,8 +216,9 @@ export function Tray() {
 }
 
 export function ConfirmSheet() {
-  const { confirmOpen, setConfirmOpen, selectedFindings, cleanSelected, cleaning, settings, updateSettings, isStale } = useStore();
+  const { confirmOpen, setConfirmOpen, selectedFindings, cleanSelected, cleaning, cleanProgress, settings, updateSettings, isStale } = useStore();
   if (!confirmOpen) return null;
+  if (cleaning && cleanProgress) return <CleanProgressSheet p={cleanProgress} toTrash={settings.toTrash} />;
   const total = sum(selectedFindings);
   const heavy = selectedFindings.filter((f) => f.category === "large");
   const active = selectedFindings.filter((f) => f.category !== "global" && f.category !== "large" && !isStale(f.lastActive));
@@ -273,6 +275,36 @@ export function ConfirmSheet() {
             <Trash2 size={15} /> {cleaning ? "Cleaning…" : settings.toTrash ? "Move to Recycle Bin" : "Delete permanently"}
           </button>
         </footer>
+      </div>
+    </div>
+  );
+}
+
+function CleanProgressSheet({ p, toTrash }: { p: CleanProgress; toTrash: boolean }) {
+  const pct = Math.min(100, (p.freed / Math.max(1, p.total)) * 100);
+  return (
+    <div className="scrim">
+      <div className="sheet glass" role="dialog" aria-modal="true" aria-labelledby="progress-title">
+        <header>
+          <h2 id="progress-title">{toTrash ? "Moving to Recycle Bin…" : "Deleting…"}</h2>
+          <p className="secondary" style={{ margin: "4px 0 0" }}>
+            Item {Math.min(p.index + 1, p.count)} of {p.count}. You can keep browsing once this finishes.
+          </p>
+        </header>
+        <div style={{ padding: "8px 22px 22px" }}>
+          <div className="progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct)} aria-label="Delete progress">
+            <span style={{ width: `${pct}%` }} />
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10 }}>
+            <span className="num">
+              <b>{bytes(p.freed)}</b> <span className="secondary">of {bytes(p.total)}</span>
+            </span>
+            <b className="num">{Math.round(pct)}%</b>
+          </div>
+          <div className="current-path" style={{ margin: "8px 0 0" }} title={p.current}>
+            {p.current || " "}
+          </div>
+        </div>
       </div>
     </div>
   );

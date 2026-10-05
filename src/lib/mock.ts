@@ -1,5 +1,5 @@
 // Demo data for running the UI in a plain browser (no Tauri backend).
-import type { Category, DepReport, DockerReport, Finding, Project, ScanProgress, ScanResult, TreeNode } from "./types";
+import type { Category, CleanOutcome, CleanProgress, DepReport, DockerReport, Finding, Project, ScanProgress, ScanResult, TreeNode } from "./types";
 
 const GB = 1024 ** 3;
 const MB = 1024 ** 2;
@@ -265,4 +265,19 @@ export async function mockDeps(): Promise<DepReport> {
       { name: "@types/lodash", dev: true, used: true, size: 2 * MB },
     ],
   };
+}
+
+export async function mockClean(items: { path: string; size: number }[], onProgress: (p: CleanProgress) => void): Promise<CleanOutcome[]> {
+  const total = items.reduce((a, i) => a + i.size, 0);
+  let freed = 0;
+  for (const [index, item] of items.entries()) {
+    const steps = 8;
+    for (let s = 1; s <= steps; s++) {
+      await new Promise((r) => setTimeout(r, 70));
+      onProgress({ freed: freed + (item.size * s) / steps, total, index, count: items.length, current: item.path });
+    }
+    freed += item.size;
+  }
+  onProgress({ freed: total, total, index: items.length, count: items.length, current: "" });
+  return items.map((i) => ({ path: i.path, ok: true, error: null }));
 }

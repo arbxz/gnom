@@ -129,3 +129,11 @@ export interface DepReport {
   scannedFiles: number;
   deps: Dep[];
 }
+
+export interface CleanProgress {
+  freed: number;
+  total: number;
+  index: number;
+  count: number;
+  current: string;
+}

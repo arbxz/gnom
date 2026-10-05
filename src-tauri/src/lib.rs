@@ -9,7 +9,7 @@ use model::{Finding, ScanOptions, ScanResult};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter, State};
@@ -69,27 +69,70 @@ struct CleanOutcome {
     error: Option<String>,
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CleanItem {
+    path: String,
+    size: u64,
+}
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct CleanProgress {
+    freed: u64,
+    total: u64,
+    index: usize,
+    count: usize,
+    current: String,
+}
+
 #[tauri::command]
-async fn clean_paths(app: AppHandle, state: State<'_, AppState>, paths: Vec<String>, to_trash: bool) -> Result<Vec<CleanOutcome>, String> {
+async fn clean_paths(app: AppHandle, state: State<'_, AppState>, items: Vec<CleanItem>, to_trash: bool) -> Result<Vec<CleanOutcome>, String> {
     let allowed: HashSet<String> = state.allowed.lock().unwrap().clone();
-    let total = paths.len();
+    let total: u64 = items.iter().map(|i| i.size).sum();
+    let count = items.len();
+    let freed = Arc::new(AtomicU64::new(0));
+    let current = Arc::new(Mutex::new((0usize, String::new())));
+    let done = Arc::new(AtomicBool::new(false));
+    {
+        let (app, freed, current, done) = (app.clone(), freed.clone(), current.clone(), done.clone());
+        std::thread::spawn(move || {
+            while !done.load(Ordering::Relaxed) {
+                let (index, path) = current.lock().unwrap().clone();
+                let _ = app.emit("clean-progress", CleanProgress { freed: freed.load(Ordering::Relaxed), total, index, count, current: path });
+                std::thread::sleep(Duration::from_millis(120));
+            }
+        });
+    }
+    let (f, c) = (freed.clone(), current.clone());
     let outcomes = tauri::async_runtime::spawn_blocking(move || {
-        paths
+        items
             .into_iter()
             .enumerate()
-            .map(|(i, path)| {
-                let _ = app.emit("clean-progress", (i, total, path.clone()));
-                let res = if allowed.contains(&scan::key(std::path::Path::new(&path))) {
-                    clean::remove(&PathBuf::from(&path), to_trash)
+            .map(|(i, item)| {
+                *c.lock().unwrap() = (i, item.path.clone());
+                let before = f.load(Ordering::Relaxed);
+                let res = if allowed.contains(&scan::key(std::path::Path::new(&item.path))) {
+                    clean::remove(&PathBuf::from(&item.path), to_trash, item.size, &f)
                 } else {
                     Err("Not part of the last scan; rescan first.".into())
                 };
-                CleanOutcome { path, ok: res.is_ok(), error: res.err() }
+                // Sizes come from the scan; settle each finished item on its scanned size so the bar ends at 100%.
+                if res.is_ok() {
+                    let counted = f.load(Ordering::Relaxed) - before;
+                    if counted < item.size {
+                        f.fetch_add(item.size - counted, Ordering::Relaxed);
+                    }
+                }
+                CleanOutcome { path: item.path, ok: res.is_ok(), error: res.err() }
             })
             .collect::<Vec<_>>()
     })
     .await
-    .map_err(|e| e.to_string())?;
+    .map_err(|e| e.to_string());
+    done.store(true, Ordering::Relaxed);
+    let outcomes = outcomes?;
+    let _ = app.emit("clean-progress", CleanProgress { freed: freed.load(Ordering::Relaxed), total, index: count, count, current: String::new() });
     let mut allowed = state.allowed.lock().unwrap();
     for o in outcomes.iter().filter(|o| o.ok) {
         allowed.remove(&scan::key(std::path::Path::new(&o.path)));

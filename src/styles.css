@@ -9,15 +9,17 @@
   --glass: rgba(255, 255, 255, 0.38);
   --glass-strong: rgba(255, 255, 255, 0.72);
   --glass-control: rgba(255, 255, 255, 0.18);
-  --glass-border: rgba(255, 255, 255, 0.65);
+  --glass-border: rgba(60, 60, 67, 0.16);
+  --panel-border: rgba(255, 255, 255, 0.32);
   --specular: inset 0 1.5px 0 rgba(255, 255, 255, 0.9), inset 0 -1px 0 rgba(255, 255, 255, 0.25);
+  --panel-specular: inset 0 1px 0 rgba(255, 255, 255, 0.55);
   --shadow: 0 1px 1px rgba(30, 30, 60, 0.04), 0 12px 32px rgba(30, 30, 60, 0.1);
   --blur: 22px;
-  /* Backdrop light: soft pastel orbs the glass refracts. */
-  --orb-1: #b9cdfb;
-  --orb-2: #e6c6f3;
-  --orb-3: #fcd3bd;
-  --orb-4: #bfe9d8;
+  /* Backdrop light: tonal shades of the base colour for the glass to refract. */
+  --orb-1: #ffffff;
+  --orb-2: #dfe1e8;
+  --orb-3: #e7e9ef;
+  --orb-4: #d6d9e2;
   --orb-opacity: 0.9;
 
   --text: #1c1c1e;
@@ -48,9 +50,9 @@
   --c-none: rgba(120, 120, 128, 0.16);
   --on-cat: #1c1c1e;
 
-  --r: 14px;
-  --r-lg: 22px;
-  --r-xl: 28px;
+  --r: 9px;
+  --r-lg: 15px;
+  --r-xl: 19px;
   --pill: 999px;
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
 }
@@ -63,12 +65,14 @@
     --glass-strong: rgba(36, 36, 46, 0.78);
     --glass-control: rgba(255, 255, 255, 0.03);
     --glass-border: rgba(255, 255, 255, 0.14);
+    --panel-border: rgba(255, 255, 255, 0.06);
+    --panel-specular: inset 0 1px 0 rgba(255, 255, 255, 0.07);
     --specular: inset 0 1px 0 rgba(255, 255, 255, 0.16), inset 0 -1px 0 rgba(255, 255, 255, 0.04);
     --shadow: 0 1px 1px rgba(0, 0, 0, 0.3), 0 14px 36px rgba(0, 0, 0, 0.45);
-    --orb-1: #2b3d78;
-    --orb-2: #4a2a62;
-    --orb-3: #5a3326;
-    --orb-4: #1d4a3e;
+    --orb-1: #1d1d25;
+    --orb-2: #15151b;
+    --orb-3: #23232c;
+    --orb-4: #111116;
     --orb-opacity: 0.75;
     --text: #f5f5f7;
     --text-2: #c7c7cc;
@@ -91,12 +95,14 @@
   --glass-strong: rgba(36, 36, 46, 0.78);
   --glass-control: rgba(255, 255, 255, 0.03);
   --glass-border: rgba(255, 255, 255, 0.14);
+  --panel-border: rgba(255, 255, 255, 0.06);
+  --panel-specular: inset 0 1px 0 rgba(255, 255, 255, 0.07);
   --specular: inset 0 1px 0 rgba(255, 255, 255, 0.16), inset 0 -1px 0 rgba(255, 255, 255, 0.04);
   --shadow: 0 1px 1px rgba(0, 0, 0, 0.3), 0 14px 36px rgba(0, 0, 0, 0.45);
-  --orb-1: #2b3d78;
-  --orb-2: #4a2a62;
-  --orb-3: #5a3326;
-  --orb-4: #1d4a3e;
+  --orb-1: #1d1d25;
+  --orb-2: #15151b;
+  --orb-3: #23232c;
+  --orb-4: #111116;
   --orb-opacity: 0.75;
   --text: #f5f5f7;
   --text-2: #c7c7cc;
@@ -219,8 +225,8 @@ select {
   background: var(--glass);
   backdrop-filter: blur(var(--blur)) saturate(180%);
   -webkit-backdrop-filter: blur(var(--blur)) saturate(180%);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--specular), var(--shadow);
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--panel-specular), var(--shadow);
 }
 
 .mono {
@@ -350,7 +356,7 @@ select {
   min-height: 38px;
   padding: 0 10px 0 6px;
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: 8px;
   background: transparent;
   cursor: pointer;
   text-align: left;
@@ -376,7 +382,7 @@ select {
 .app-icon {
   width: 26px;
   height: 26px;
-  border-radius: 8px;
+  border-radius: 5px;
   display: grid;
   place-items: center;
   color: var(--text);
@@ -1174,13 +1180,13 @@ select {
   position: relative;
   flex: 1;
   min-height: 0;
-  border-radius: 10px;
+  border-radius: 7px;
   overflow: hidden;
 }
 .tm-node {
   position: absolute;
   overflow: hidden;
-  border-radius: 6px;
+  border-radius: 4px;
   transition: filter 0.15s, border-color 0.15s;
   cursor: pointer;
   color: var(--text);
@@ -1228,7 +1234,7 @@ select {
   z-index: 70;
   pointer-events: none;
   padding: 9px 11px;
-  border-radius: 12px;
+  border-radius: 8px;
   background: var(--glass-strong);
   max-width: 360px;
   font-size: 12.5px;
@@ -1343,18 +1349,18 @@ pre.snippet {
     corner-shape: squircle;
   }
   :root {
-    --r: 18px;
-    --r-lg: 28px;
-    --r-xl: 36px;
+    --r: 12px;
+    --r-lg: 19px;
+    --r-xl: 24px;
   }
   .nav-item {
-    border-radius: 16px;
-  }
-  .app-icon {
     border-radius: 11px;
   }
+  .app-icon {
+    border-radius: 7px;
+  }
   .tm-node {
-    border-radius: 9px;
+    border-radius: 6px;
   }
 }
 

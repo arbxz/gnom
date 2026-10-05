@@ -1,47 +1,34 @@
-/* gnom — iOS-style glass. Tokens first, then layout, then components. */
+/* gnom — minimalist iOS glass. Flat surfaces, hairline outlines, colour only for data. */
 :root {
   color-scheme: light;
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
   --mono: "JetBrains Mono", "SF Mono", "Cascadia Code", Consolas, monospace;
-  --wall: radial-gradient(70% 60% at 15% 0%, #ffffff 0%, transparent 70%), radial-gradient(60% 60% at 100% 100%, #d9d9e0 0%, transparent 70%),
-    linear-gradient(165deg, #f7f7f9 0%, #ececf0 50%, #e1e1e7 100%);
 
-  --glass: rgba(255, 255, 255, 0.55);
-  --glass-strong: rgba(255, 255, 255, 0.82);
-  --glass-grad: linear-gradient(160deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.42));
-  --glass-border: rgba(255, 255, 255, 0.85);
-  --highlight: inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  --shadow: 0 1px 2px rgba(20, 20, 30, 0.05), 0 10px 30px rgba(20, 20, 30, 0.07);
-  --blur: 28px;
+  --bg: #f2f2f7;
+  --glass: rgba(255, 255, 255, 0.62);
+  --glass-strong: rgba(255, 255, 255, 0.86);
+  --glass-border: rgba(60, 60, 67, 0.12);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.05);
+  --blur: 24px;
 
   --text: #1c1c1e;
   --text-2: #48484d;
   --text-3: #6a6a70;
-  --separator: rgba(60, 60, 67, 0.13);
-  --fill: rgba(120, 120, 128, 0.1);
-  --fill-2: rgba(120, 120, 128, 0.18);
+  --separator: rgba(60, 60, 67, 0.12);
+  /* Outlines: hairline for resting controls, stronger for selected/primary. */
+  --line: rgba(60, 60, 67, 0.22);
+  --line-strong: #1c1c1e;
+  --hover: rgba(120, 120, 128, 0.08);
+  --press: rgba(120, 120, 128, 0.14);
 
-  /* Monochrome accent: graphite on light, silver on dark. */
-  --accent: #1c1c1e;
-  --accent-grad: linear-gradient(180deg, #48484e 0%, #1c1c1e 100%);
-  --accent-text: #1c1c1e;
-  --on-accent: #ffffff;
-  --icon-grad: linear-gradient(150deg, #6e6e75 0%, #2c2c30 100%);
-  --hero-text: linear-gradient(180deg, #2c2c30 0%, #6e6e75 100%);
-  --progress: linear-gradient(90deg, #3a3a3e, #8e8e95, #3a3a3e);
-
-  /* Pastel status: tinted background + deep ink for text. */
-  --danger: #ec8f8f;
-  --danger-grad: linear-gradient(180deg, #f6b0ae 0%, #ec8b8a 100%);
-  --on-danger: #3f0d0d;
+  /* Pastel status: outline + deep ink. */
+  --danger-line: #e58a87;
   --danger-text: #a3302a;
-  --danger-bg: #fadcdc;
-  --ok: #3d9b6c;
+  --danger-hover: rgba(229, 138, 135, 0.12);
+  --ok-line: #7fcca5;
   --ok-text: #1f6b43;
-  --ok-bg: #d5f0e2;
-  --warn: #c98a1a;
+  --warn-line: #e9be6e;
   --warn-text: #7a4e00;
-  --warn-bg: #fbe8c6;
 
   /* Category pastels: validated set (adjacent CVD dE 8.1, normal-vision 15.1); always shown with labels. */
   --c-deps: #6f9fe8;
@@ -49,77 +36,56 @@
   --c-cache: #4fbf95;
   --c-global: #9d86ea;
   --c-large: #e889b0;
-  --c-none: rgba(120, 120, 128, 0.2);
+  --c-none: rgba(120, 120, 128, 0.16);
   --on-cat: #1c1c1e;
 
-  --r-sm: 8px;
   --r: 12px;
   --r-lg: 18px;
-  --r-xl: 24px;
+  --r-xl: 22px;
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --wall: radial-gradient(70% 60% at 15% 0%, #2a2a30 0%, transparent 70%), radial-gradient(60% 60% at 100% 100%, #1c1c22 0%, transparent 70%), linear-gradient(165deg, #131316 0%, #0c0c0e 55%, #070708 100%);
-    --glass: rgba(36, 36, 40, 0.5);
-    --glass-strong: rgba(44, 44, 50, 0.86);
-    --glass-grad: linear-gradient(160deg, rgba(70, 70, 78, 0.5), rgba(30, 30, 34, 0.4));
-    --glass-border: rgba(255, 255, 255, 0.08);
-    --highlight: inset 0 1px 0 rgba(255, 255, 255, 0.07);
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 34px rgba(0, 0, 0, 0.4);
+    --bg: #000000;
+    --glass: rgba(28, 28, 30, 0.62);
+    --glass-strong: rgba(36, 36, 40, 0.9);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
     --text: #f5f5f7;
     --text-2: #c7c7cc;
     --text-3: #a1a1a8;
-    --separator: rgba(255, 255, 255, 0.08);
-    --fill: rgba(120, 120, 128, 0.2);
-    --fill-2: rgba(120, 120, 128, 0.3);
-    --accent: #f2f2f4;
-    --accent-grad: linear-gradient(180deg, #ffffff 0%, #c9c9cf 100%);
-    --accent-text: #f5f5f7;
-    --on-accent: #111113;
-    --icon-grad: linear-gradient(150deg, #a1a1a8 0%, #4a4a50 100%);
-    --hero-text: linear-gradient(180deg, #ffffff 0%, #9a9aa2 100%);
-    --progress: linear-gradient(90deg, #8e8e95, #f5f5f7, #8e8e95);
+    --separator: rgba(255, 255, 255, 0.09);
+    --line: rgba(255, 255, 255, 0.2);
+    --line-strong: #f5f5f7;
+    --hover: rgba(255, 255, 255, 0.06);
+    --press: rgba(255, 255, 255, 0.1);
     --danger-text: #f6b0ae;
-    --danger-bg: rgba(236, 143, 143, 0.18);
     --ok-text: #a8e3c5;
-    --ok-bg: rgba(79, 191, 149, 0.18);
     --warn-text: #f5d39a;
-    --warn-bg: rgba(238, 177, 80, 0.16);
-    --c-none: rgba(120, 120, 128, 0.24);
+    --c-none: rgba(120, 120, 128, 0.22);
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --wall: radial-gradient(70% 60% at 15% 0%, #2a2a30 0%, transparent 70%), radial-gradient(60% 60% at 100% 100%, #1c1c22 0%, transparent 70%), linear-gradient(165deg, #131316 0%, #0c0c0e 55%, #070708 100%);
-  --glass: rgba(36, 36, 40, 0.5);
-  --glass-strong: rgba(44, 44, 50, 0.86);
-  --glass-grad: linear-gradient(160deg, rgba(70, 70, 78, 0.5), rgba(30, 30, 34, 0.4));
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --highlight: inset 0 1px 0 rgba(255, 255, 255, 0.07);
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 34px rgba(0, 0, 0, 0.4);
+  --bg: #000000;
+  --glass: rgba(28, 28, 30, 0.62);
+  --glass-strong: rgba(36, 36, 40, 0.9);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
   --text: #f5f5f7;
   --text-2: #c7c7cc;
   --text-3: #a1a1a8;
-  --separator: rgba(255, 255, 255, 0.08);
-  --fill: rgba(120, 120, 128, 0.2);
-  --fill-2: rgba(120, 120, 128, 0.3);
-  --accent: #f2f2f4;
-  --accent-grad: linear-gradient(180deg, #ffffff 0%, #c9c9cf 100%);
-  --accent-text: #f5f5f7;
-  --on-accent: #111113;
-  --icon-grad: linear-gradient(150deg, #a1a1a8 0%, #4a4a50 100%);
-  --hero-text: linear-gradient(180deg, #ffffff 0%, #9a9aa2 100%);
-  --progress: linear-gradient(90deg, #8e8e95, #f5f5f7, #8e8e95);
+  --separator: rgba(255, 255, 255, 0.09);
+  --line: rgba(255, 255, 255, 0.2);
+  --line-strong: #f5f5f7;
+  --hover: rgba(255, 255, 255, 0.06);
+  --press: rgba(255, 255, 255, 0.1);
   --danger-text: #f6b0ae;
-  --danger-bg: rgba(236, 143, 143, 0.18);
   --ok-text: #a8e3c5;
-  --ok-bg: rgba(79, 191, 149, 0.18);
   --warn-text: #f5d39a;
-  --warn-bg: rgba(238, 177, 80, 0.16);
-  --c-none: rgba(120, 120, 128, 0.24);
+  --c-none: rgba(120, 120, 128, 0.22);
 }
 
 /* iOS "Reduce Transparency": solid surfaces, no blur — also the fast path on GPU-less machines. */
@@ -143,7 +109,7 @@ body,
 body {
   font: 14px/1.45 var(--font);
   color: var(--text);
-  background: #e9e9ee;
+  background: var(--bg);
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
   user-select: none;
@@ -158,10 +124,10 @@ select {
   color: inherit;
 }
 ::selection {
-  background: color-mix(in srgb, var(--accent) 30%, transparent);
+  background: var(--press);
 }
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--line-strong);
   outline-offset: 2px;
 }
 
@@ -169,18 +135,18 @@ select {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: var(--wall);
+  background: var(--bg);
 }
 :root[data-native] .wallpaper {
-  opacity: 0.55;
+  opacity: 0.6;
 }
 
 .glass {
-  background: var(--glass-grad), var(--glass);
-  backdrop-filter: blur(var(--blur)) saturate(180%);
-  -webkit-backdrop-filter: blur(var(--blur)) saturate(180%);
+  background: var(--glass);
+  backdrop-filter: blur(var(--blur)) saturate(170%);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(170%);
   border: 1px solid var(--glass-border);
-  box-shadow: var(--highlight), var(--shadow);
+  box-shadow: var(--shadow);
 }
 
 .mono {
@@ -202,12 +168,8 @@ select {
   white-space: nowrap;
   min-width: 0;
 }
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
+.spin {
+  animation: spin 1s linear infinite;
 }
 
 /* ---------- App frame ---------- */
@@ -223,7 +185,6 @@ select {
   align-items: center;
   gap: 10px;
   padding-left: 14px;
-  border-radius: 0;
   border-width: 0 0 1px;
   box-shadow: none;
   z-index: 5;
@@ -246,26 +207,26 @@ select {
   height: 20px;
   padding: 0 8px;
   border-radius: 999px;
-  background: var(--fill);
+  border: 1px solid var(--line);
   color: var(--text-2);
   font-size: 11.5px;
   font-weight: 550;
   white-space: nowrap;
 }
 .chip.accent {
-  background: var(--accent-grad);
-  color: var(--on-accent);
+  border-color: var(--line-strong);
+  color: var(--text);
 }
 .chip.warn {
-  background: var(--warn-bg);
+  border-color: var(--warn-line);
   color: var(--warn-text);
 }
 .chip.ok {
-  background: var(--ok-bg);
+  border-color: var(--ok-line);
   color: var(--ok-text);
 }
 .chip.danger {
-  background: var(--danger-bg);
+  border-color: var(--danger-line);
   color: var(--danger-text);
 }
 .winctl {
@@ -283,7 +244,7 @@ select {
   transition: background 0.15s;
 }
 .winctl button:hover {
-  background: var(--fill);
+  background: var(--hover);
 }
 .winctl button.close:hover {
   background: #e81123;
@@ -313,19 +274,19 @@ select {
   gap: 10px;
   min-height: 38px;
   padding: 0 10px 0 6px;
-  border: 0;
+  border: 1px solid transparent;
   border-radius: 10px;
   background: transparent;
   cursor: pointer;
   text-align: left;
-  transition: background 0.18s var(--ease);
+  transition: background 0.18s var(--ease), border-color 0.18s;
 }
 .nav-item:hover {
-  background: var(--fill);
+  background: var(--hover);
 }
 .nav-item[aria-current="page"] {
+  border-color: var(--line);
   background: var(--glass-strong);
-  box-shadow: var(--highlight), 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 .nav-item .label {
   flex: 1;
@@ -335,15 +296,16 @@ select {
   font-size: 12px;
   color: var(--text-3);
 }
+/* Icon tile: outlined rounded square, stroke icon. A category passes its pastel as the outline. */
 .app-icon {
   width: 26px;
   height: 26px;
   border-radius: 7px;
   display: grid;
   place-items: center;
-  color: var(--on-cat);
+  color: var(--text);
   flex: none;
-  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  border: 1.25px solid var(--icon-line, var(--line));
 }
 .sidebar .spacer {
   flex: 1;
@@ -352,7 +314,7 @@ select {
   margin: 8px 6px 2px;
   padding: 10px;
   border-radius: var(--r);
-  background: var(--fill);
+  border: 1px solid var(--separator);
   font-size: 12px;
 }
 
@@ -390,7 +352,7 @@ select {
   flex: 1;
 }
 
-/* ---------- Buttons & controls ---------- */
+/* ---------- Buttons & controls: outlined, fill only on hover/press ---------- */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -399,61 +361,47 @@ select {
   min-height: 34px;
   padding: 0 14px;
   border-radius: 10px;
-  border: 0;
-  background: var(--fill);
+  border: 1px solid var(--line);
+  background: transparent;
   font-weight: 560;
   cursor: pointer;
   white-space: nowrap;
-  transition: transform 0.12s var(--ease), background 0.15s, opacity 0.15s;
+  transition: transform 0.12s var(--ease), background 0.15s, border-color 0.15s, opacity 0.15s;
 }
 .btn:hover {
-  background: var(--fill-2);
+  background: var(--hover);
 }
 .btn:active {
   transform: scale(0.97);
+  background: var(--press);
 }
 .btn:disabled {
-  opacity: 0.45;
+  opacity: 0.4;
   cursor: default;
   transform: none;
+  background: transparent;
 }
 .btn.primary {
-  background: var(--accent-grad);
-  color: var(--on-accent);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.18);
-}
-.btn.primary:hover {
-  filter: brightness(1.12);
-  background: var(--accent-grad);
+  border: 1.5px solid var(--line-strong);
 }
 .btn.tinted {
-  background: var(--glass-strong);
-  color: var(--text);
-  box-shadow: inset 0 0 0 1px var(--separator), var(--highlight);
+  border-color: var(--line);
 }
-.btn.tinted:hover {
-  background: var(--fill-2);
-}
-.btn.danger {
-  background: var(--danger-grad);
-  color: var(--on-danger);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.35);
-}
-.btn.danger:hover {
-  filter: brightness(1.04) saturate(1.1);
-  background: var(--danger-grad);
-}
+.btn.danger,
 .btn.danger-tinted {
-  background: var(--danger-bg);
+  border: 1.5px solid var(--danger-line);
   color: var(--danger-text);
 }
-.btn.plain {
-  background: transparent;
-  color: var(--accent-text);
-  padding: 0 8px;
+.btn.danger-tinted {
+  border-width: 1px;
 }
-.btn.plain:hover {
-  background: var(--fill);
+.btn.danger:hover,
+.btn.danger-tinted:hover {
+  background: var(--danger-hover);
+}
+.btn.plain {
+  border-color: transparent;
+  padding: 0 8px;
 }
 .btn.sm {
   min-height: 28px;
@@ -479,33 +427,35 @@ select {
   cursor: pointer;
 }
 .icon-btn:hover {
-  background: var(--fill);
+  background: var(--hover);
   color: var(--text);
 }
 
 .segmented {
   display: inline-flex;
   padding: 2px;
-  border-radius: 9px;
-  background: var(--fill);
+  border-radius: 10px;
+  border: 1px solid var(--line);
   gap: 2px;
 }
 .segmented button {
-  border: 0;
+  border: 1px solid transparent;
   background: transparent;
-  min-height: 28px;
+  min-height: 26px;
   padding: 0 12px;
   border-radius: 7px;
   font-size: 12.5px;
   font-weight: 560;
   cursor: pointer;
   color: var(--text-2);
-  transition: background 0.2s var(--ease), color 0.2s;
+  transition: border-color 0.2s var(--ease), color 0.2s;
+}
+.segmented button:hover {
+  color: var(--text);
 }
 .segmented button[aria-pressed="true"] {
-  background: var(--glass-strong);
+  border-color: var(--line-strong);
   color: var(--text);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
 }
 
 .search {
@@ -515,9 +465,12 @@ select {
   height: 34px;
   padding: 0 10px;
   border-radius: 10px;
-  background: var(--fill);
+  border: 1px solid var(--line);
   color: var(--text-3);
   min-width: 220px;
+}
+.search:focus-within {
+  border-color: var(--line-strong);
 }
 .search input {
   border: 0;
@@ -531,46 +484,44 @@ select {
   height: 34px;
   padding: 0 10px;
   border-radius: 10px;
-  border: 0;
-  background: var(--fill);
+  border: 1px solid var(--line);
+  background: transparent;
   outline: 0;
   min-width: 0;
 }
 .field:focus {
-  box-shadow: 0 0 0 2px var(--accent);
+  border-color: var(--line-strong);
 }
 
 .switch {
   position: relative;
-  width: 51px;
-  height: 31px;
+  width: 46px;
+  height: 28px;
   flex: none;
   border-radius: 999px;
-  border: 0;
-  background: var(--fill-2);
+  border: 1.5px solid var(--line);
+  background: transparent;
   cursor: pointer;
-  transition: background 0.25s var(--ease);
+  transition: border-color 0.25s var(--ease);
 }
 .switch::after {
   content: "";
   position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 27px;
-  height: 27px;
+  top: 3px;
+  left: 3px;
+  width: 19px;
+  height: 19px;
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15), 0 1px 1px rgba(0, 0, 0, 0.16);
-  transition: transform 0.25s var(--ease);
+  border: 1.5px solid var(--text-3);
+  transition: transform 0.25s var(--ease), background 0.25s, border-color 0.25s;
 }
 .switch[aria-checked="true"] {
-  background: var(--accent-grad);
+  border-color: var(--line-strong);
 }
 .switch[aria-checked="true"]::after {
-  background: var(--glass-strong);
-}
-.switch[aria-checked="true"]::after {
-  transform: translateX(20px);
+  transform: translateX(18px);
+  border-color: var(--line-strong);
+  background: var(--line-strong);
 }
 
 .check {
@@ -580,34 +531,33 @@ select {
   margin: 0;
   flex: none;
   border-radius: 50%;
-  border: 1.5px solid color-mix(in srgb, var(--text-3) 70%, transparent);
+  border: 1.5px solid var(--line);
   display: grid;
   place-items: center;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition: border-color 0.15s;
 }
-.check:checked {
-  background: var(--accent-grad);
-  border-color: var(--accent);
+.check:hover {
+  border-color: var(--text-3);
+}
+.check:checked,
+.check:indeterminate {
+  border-color: var(--line-strong);
 }
 .check:checked::after {
   content: "";
   width: 9px;
   height: 5px;
-  border: 2px solid var(--on-accent);
+  border: 1.75px solid var(--line-strong);
   border-top: 0;
   border-right: 0;
   transform: translateY(-1px) rotate(-45deg);
 }
-.check:indeterminate {
-  background: var(--accent);
-  border-color: var(--accent);
-}
 .check:indeterminate::after {
   content: "";
-  width: 10px;
-  height: 2px;
-  background: var(--on-accent);
+  width: 9px;
+  height: 1.75px;
+  background: var(--line-strong);
   border-radius: 1px;
 }
 
@@ -680,7 +630,7 @@ select {
   cursor: pointer;
 }
 .row.clickable:hover {
-  background: color-mix(in srgb, var(--fill) 55%, transparent);
+  background: var(--hover);
 }
 .row .body {
   flex: 1;
@@ -729,7 +679,7 @@ select {
   gap: 10px;
   padding: 8px 12px;
   border-radius: var(--r);
-  background: var(--fill);
+  border: 1px solid var(--separator);
   margin-right: 14px;
 }
 .dot {
@@ -742,7 +692,7 @@ select {
 .bar {
   height: 6px;
   border-radius: 3px;
-  background: var(--fill);
+  background: var(--c-none);
   overflow: hidden;
   display: flex;
   gap: 2px;
@@ -753,11 +703,22 @@ select {
   transition: width 0.5s var(--ease);
 }
 .bar.thick {
-  height: 12px;
-  border-radius: 6px;
+  height: 10px;
+  border-radius: 5px;
 }
-.bar.thick > span {
-  border-radius: 4px;
+
+.progress {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--c-none);
+  overflow: hidden;
+}
+.progress > span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--text);
+  transition: width 0.25s var(--ease);
 }
 
 .empty {
@@ -793,16 +754,9 @@ select {
   align-items: center;
   gap: 6px;
 }
-.hero {
-  background: linear-gradient(135deg, var(--glass-strong) 0%, transparent 60%), var(--glass-grad), var(--glass);
-}
 .hero .big {
-  background: var(--hero-text);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
   font-size: 54px;
-  font-weight: 750;
+  font-weight: 700;
   letter-spacing: -0.035em;
   line-height: 1.05;
   margin: 4px 0 6px;
@@ -810,9 +764,9 @@ select {
 }
 .hero .big small {
   font-size: 0.42em;
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: -0.01em;
-  -webkit-text-fill-color: var(--text-2);
+  color: var(--text-3);
   margin-left: 6px;
 }
 .hero .bar {
@@ -838,12 +792,12 @@ select {
   flex-direction: column;
   gap: 8px;
   text-align: left;
-  border: 1px solid var(--glass-border);
   cursor: pointer;
-  transition: transform 0.2s var(--ease);
+  transition: border-color 0.2s, transform 0.2s var(--ease);
 }
 .tile:hover {
-  transform: translateY(-2px);
+  border-color: var(--line);
+  transform: translateY(-1px);
 }
 .tile .value {
   font-size: 22px;
@@ -865,13 +819,13 @@ select {
 }
 .welcome-card {
   width: min(560px, 100%);
-  border-radius: 28px;
+  border-radius: 26px;
   padding: 34px 32px 28px;
   text-align: center;
 }
 .welcome-card h1 {
   margin: 14px 0 6px;
-  font-size: 30px;
+  font-size: 28px;
   letter-spacing: -0.025em;
 }
 .welcome-card p {
@@ -890,9 +844,9 @@ select {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 6px 4px 10px;
+  padding: 3px 5px 3px 10px;
   border-radius: 999px;
-  background: var(--fill);
+  border: 1px solid var(--line);
   font-family: var(--mono);
   font-size: 12px;
 }
@@ -908,7 +862,7 @@ select {
   border-radius: 50%;
 }
 .root-chip button:hover {
-  background: var(--fill-2);
+  background: var(--hover);
 }
 .finds {
   display: flex;
@@ -918,12 +872,12 @@ select {
   margin-top: 18px;
 }
 .ring {
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
   margin: 0 auto;
   border-radius: 50%;
-  border: 4px solid var(--fill);
-  border-top-color: var(--text);
+  border: 2px solid var(--separator);
+  border-top-color: var(--line-strong);
   animation: spin 0.9s linear infinite;
 }
 @keyframes spin {
@@ -940,7 +894,7 @@ select {
 .progress-stats div {
   padding: 10px;
   border-radius: var(--r);
-  background: var(--fill);
+  border: 1px solid var(--separator);
 }
 .progress-stats b {
   display: block;
@@ -995,7 +949,7 @@ select {
 .scrim {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.28);
+  background: rgba(0, 0, 0, 0.22);
   display: grid;
   place-items: center;
   z-index: 50;
@@ -1012,14 +966,14 @@ select {
   max-height: min(680px, 100%);
   display: flex;
   flex-direction: column;
-  border-radius: 22px;
+  border-radius: 20px;
   background: var(--glass-strong);
   animation: pop 0.3s var(--ease);
   overflow: hidden;
 }
 @keyframes pop {
   from {
-    transform: scale(0.96);
+    transform: scale(0.97);
     opacity: 0;
   }
 }
@@ -1114,11 +1068,12 @@ select {
   padding: 3px 7px;
   border-radius: 6px;
   cursor: pointer;
-  color: var(--accent-text);
+  color: var(--text-2);
   font-weight: 560;
 }
 .crumbs button:hover {
-  background: var(--fill);
+  background: var(--hover);
+  color: var(--text);
 }
 .crumbs button[aria-current="true"] {
   color: var(--text);
@@ -1135,29 +1090,29 @@ select {
   position: absolute;
   overflow: hidden;
   border-radius: 6px;
-  transition: filter 0.15s;
+  transition: filter 0.15s, border-color 0.15s;
   cursor: pointer;
   color: var(--text);
 }
 .tm-node.frame {
-  background: color-mix(in srgb, var(--fill) 70%, transparent);
-  box-shadow: inset 0 0 0 1px var(--separator);
+  border: 1px solid var(--separator);
 }
 .tm-node.leaf {
-  background: var(--c-none);
+  border: 1px solid var(--line);
 }
 .tm-node.leaf.cat {
+  border-color: transparent;
   color: var(--on-cat);
 }
 .tm-node.rest {
-  background: repeating-linear-gradient(45deg, transparent 0 4px, var(--fill) 4px 5px);
+  border: 1px dashed var(--separator);
   cursor: default;
 }
 .tm-node:hover {
-  filter: brightness(1.08);
+  border-color: var(--line-strong);
 }
 .tm-node.leaf.cat:hover {
-  filter: brightness(1.12) saturate(1.05);
+  filter: brightness(1.06);
 }
 .tm-label {
   position: absolute;
@@ -1174,7 +1129,7 @@ select {
 }
 .tm-label small {
   font-weight: 500;
-  opacity: 0.8;
+  opacity: 0.75;
   margin-left: 4px;
 }
 .tm-tip {
@@ -1204,14 +1159,13 @@ select {
   font-size: 11px;
   padding: 1px 5px;
   border-radius: 5px;
-  background: var(--fill);
-  border: 1px solid var(--separator);
+  border: 1px solid var(--line);
 }
 pre.snippet {
   margin: 8px 0 0;
   padding: 10px 12px;
   border-radius: var(--r);
-  background: var(--fill);
+  border: 1px solid var(--separator);
   font: 12px/1.5 var(--mono);
   white-space: pre-wrap;
   word-break: break-all;
@@ -1243,6 +1197,10 @@ pre.snippet {
   color: var(--text-3);
   font-size: 12px;
 }
+.proj-bar {
+  width: 120px;
+  flex: none;
+}
 
 @media (max-width: 1100px) {
   .map-layout {
@@ -1252,52 +1210,11 @@ pre.snippet {
   .treemap {
     min-height: 460px;
   }
-}
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-.spin {
-  animation: spin 1s linear infinite;
-}
-.proj-bar {
-  width: 120px;
-  flex: none;
-}
-@media (max-width: 1100px) {
   .proj-bar {
     display: none;
   }
   .app {
     grid-template-columns: 210px 1fr;
-  }
-}
-.app-icon.mono {
-  background: var(--icon-grad);
-  color: #fff;
-}
-.progress {
-  height: 10px;
-  border-radius: 5px;
-  background: var(--fill);
-  overflow: hidden;
-}
-.progress > span {
-  display: block;
-  height: 100%;
-  border-radius: 5px;
-  background: var(--progress);
-  background-size: 200% 100%;
-  animation: sheen 1.6s linear infinite;
-  transition: width 0.25s var(--ease);
-}
-@keyframes sheen {
-  to {
-    background-position: -200% 0;
   }
 }
 @media (max-width: 1000px) {
@@ -1306,5 +1223,13 @@ pre.snippet {
   }
   .hero > div:nth-child(2) {
     justify-content: flex-start !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }

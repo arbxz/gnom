@@ -8,28 +8,20 @@ import { useStore } from "../state";
 
 export function Logo({ size = 22 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">
-      <defs>
-        <linearGradient id="gnom-g" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#6e6e75" />
-          <stop offset="1" stopColor="#1c1c1e" />
-        </linearGradient>
-      </defs>
-      <rect width="64" height="64" rx="15" fill="url(#gnom-g)" />
-      <path d="M32 9 L47 42 H17 Z" fill="#fff" opacity="0.96" />
-      <circle cx="32" cy="9" r="3.4" fill="#f6b0ae" />
-      <rect x="14" y="41" width="36" height="7" rx="3.5" fill="#fff" opacity="0.7" />
-      <circle cx="26" cy="54" r="2.4" fill="#fff" opacity="0.85" />
-      <circle cx="38" cy="54" r="2.4" fill="#fff" opacity="0.85" />
+    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth={3.5} strokeLinejoin="round" strokeLinecap="round" aria-hidden="true">
+      <rect x="3" y="3" width="58" height="58" rx="15" strokeWidth={2.5} />
+      <path d="M32 13 L45 42 H19 Z" />
+      <circle cx="32" cy="12" r="2.5" fill="currentColor" />
+      <path d="M17 47 H47" />
     </svg>
   );
 }
 
-/** iOS Settings-style icon tile: a graphite gradient by default, or a pastel fill when `color` is given. */
+/** Outlined icon tile; a category passes its pastel as the outline colour. */
 export function AppIcon({ icon: Icon, color, size = 26 }: { icon: LucideIcon; color?: string; size?: number }) {
   return (
-    <span className={`app-icon${color ? "" : " mono"}`} style={{ background: color, width: size, height: size }}>
-      <Icon size={Math.round(size * 0.6)} strokeWidth={2.2} aria-hidden="true" />
+    <span className="app-icon" style={{ ["--icon-line" as string]: color, width: size, height: size }}>
+      <Icon size={Math.round(size * 0.58)} strokeWidth={1.75} aria-hidden="true" />
     </span>
   );
 }

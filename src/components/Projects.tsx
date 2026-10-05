@@ -89,7 +89,7 @@ function ProjectRow({ p, items }: { p: Project; items: Finding[] }) {
     <div className="row-group">
       <div className="row clickable" onClick={() => setOpen(!open)} aria-expanded={open}>
         {regen.length ? <SelectAll paths={regen} label={`Select regenerable junk in ${p.name}`} /> : <span style={{ width: 22 }} />}
-        <Folder size={20} color={stale ? "var(--warn)" : "var(--accent)"} fill="currentColor" fillOpacity={0.18} aria-hidden="true" />
+        <Folder size={20} color={stale ? "var(--warn-line)" : "var(--text)"} aria-hidden="true" />
         <div className="body">
           <div className="title">
             <span className="truncate">{p.name}</span>

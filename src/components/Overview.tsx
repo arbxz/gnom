@@ -28,7 +28,7 @@ export function Overview() {
       <section className="hero glass" aria-label="Reclaimable space">
         <div>
           <div className="kicker">
-            <Sparkles size={15} color="var(--accent)" /> Reclaimable dev junk
+            <Sparkles size={15} color="var(--text)" /> Reclaimable dev junk
           </div>
           <div className="big">
             {bytes(total).split(" ")[0]}
@@ -107,7 +107,7 @@ export function Overview() {
             {projectsJunk.length === 0 && <div className="row secondary">No stale projects with build junk. Nice.</div>}
             {projectsJunk.map(({ p, items }) => (
               <div key={p.path} className="row clickable" onClick={() => setMany(items.map((i) => i.path), true)} title="Select this project's regenerable junk">
-                <span className="dot" style={{ background: "var(--warn)", borderRadius: "50%" }} />
+                <span className="dot" style={{ background: "var(--warn-line)", borderRadius: "50%" }} />
                 <div className="body">
                   <div className="title truncate">{p.name}</div>
                   <div className="subtitle truncate">

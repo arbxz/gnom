@@ -235,7 +235,7 @@ export function ConfirmSheet() {
         <div className="sheet-body">
           {heavy.length > 0 && (
             <div className="sub-row" style={{ margin: "8px 0", gap: 8 }}>
-              <AlertTriangle size={16} color="var(--warn)" />
+              <AlertTriangle size={16} color="var(--warn-line)" />
               <span>
                 {heavy.length} heavy file{heavy.length > 1 ? "s are" : " is"} not regenerable — make sure you don't need {heavy.length > 1 ? "them" : "it"}.
               </span>
@@ -243,7 +243,7 @@ export function ConfirmSheet() {
           )}
           {active.length > 0 && (
             <div className="sub-row" style={{ margin: "8px 0", gap: 8 }}>
-              <Info size={16} color="var(--accent)" />
+              <Info size={16} color="var(--text)" />
               <span>{active.length} item{active.length > 1 ? "s belong" : " belongs"} to recently active projects; you'll need to reinstall or rebuild there.</span>
             </div>
           )}
@@ -316,7 +316,7 @@ export function Toasts() {
     <div className="toasts" aria-live="polite">
       {toasts.map((t) => (
         <div key={t.id} className="toast glass" role={t.kind === "error" ? "alert" : "status"}>
-          {t.kind === "ok" ? <CheckCircle2 size={20} color="var(--ok)" /> : t.kind === "error" ? <AlertTriangle size={20} color="var(--danger)" /> : <Info size={20} color="var(--accent)" />}
+          {t.kind === "ok" ? <CheckCircle2 size={20} color="var(--ok-line)" /> : t.kind === "error" ? <AlertTriangle size={20} color="var(--danger-line)" /> : <Info size={20} color="var(--text)" />}
           <div className="body">
             <b>{t.title}</b>
             {t.body && <p>{t.body}</p>}

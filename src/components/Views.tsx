@@ -170,7 +170,7 @@ export function Docker() {
           <div className="list glass">
             {docker.containers.map((c) => (
               <div key={c.id} className="row">
-                <span className="dot" style={{ borderRadius: "50%", background: c.state === "running" ? "var(--ok)" : "var(--text-3)" }} />
+                <span className="dot" style={{ borderRadius: "50%", background: c.state === "running" ? "var(--ok-line)" : "var(--text-3)" }} />
                 <div className="body">
                   <div className="title">{c.name}</div>
                   <div className="subtitle mono">{c.image}</div>

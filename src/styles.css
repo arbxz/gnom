@@ -1483,3 +1483,21 @@ pre.snippet {
   -webkit-mask: url("/gnom-mark.png") center / contain no-repeat;
   mask: url("/gnom-mark.png") center / contain no-repeat;
 }
+
+/* Floating messages sit over busy content: near-opaque so their text is always legible. */
+:root {
+  --float: rgba(255, 255, 255, 0.94);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --float: rgba(28, 25, 23, 0.95);
+  }
+}
+:root[data-theme="dark"] {
+  --float: rgba(28, 25, 23, 0.95);
+}
+.toast,
+.tray,
+.tm-tip {
+  background: var(--float);
+}

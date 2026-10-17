@@ -35,7 +35,7 @@ export function Overview() {
             <small>{bytes(total).split(" ")[1]}</small>
           </div>
           <div className="secondary">
-            {f.length} items across {result.projects.length} projects · {count(result.files)} files scanned in {(result.durationMs / 1000).toFixed(1)}s
+            {f.length} items across {result.projects.length} projects · {count(result.files)} files scanned {ago(result.finishedAt)} in {(result.durationMs / 1000).toFixed(1)}s
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>

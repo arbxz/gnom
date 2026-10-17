@@ -6,8 +6,10 @@ import { Caches, Docker, LargeFiles, SettingsView } from "./components/Views";
 import { StoreProvider, useStore } from "./state";
 
 function Content() {
-  const { view, result, scanning } = useStore();
+  const { view, result, scanning, restoring } = useStore();
   if (view === "settings") return <SettingsView />;
+  // Avoid flashing the empty welcome screen while the last scan loads.
+  if (restoring) return null;
   if (view === "docker") return <Docker />;
   if (!result || scanning) return <Welcome />;
   switch (view) {

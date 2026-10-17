@@ -17,14 +17,14 @@ pub enum Category {
     Large,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct FileEntry {
     pub path: String,
     pub size: u64,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Finding {
     pub path: String,
@@ -47,7 +47,7 @@ pub struct Finding {
     pub command: Option<String>,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Project {
     pub path: String,
@@ -58,7 +58,7 @@ pub struct Project {
     pub has_git: bool,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Node {
     pub name: String,
@@ -68,7 +68,7 @@ pub struct Node {
     pub children: Vec<Node>,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ScanResult {
     pub roots: Vec<String>,

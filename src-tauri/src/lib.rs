@@ -12,7 +12,7 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 
 #[derive(Default)]
 struct AppState {
@@ -21,6 +21,43 @@ struct AppState {
     /// can never turn into deleting an arbitrary folder.
     allowed: Mutex<HashSet<String>>,
     scanning: AtomicBool,
+}
+
+/// The last scan lives on disk so the app reopens on real results instead of an empty screen.
+fn cache_file(app: &AppHandle) -> Option<PathBuf> {
+    app.path().app_data_dir().ok().map(|d| d.join("last-scan.json"))
+}
+
+fn write_cache(app: &AppHandle, result: &ScanResult) -> Result<(), String> {
+    let path = cache_file(app).ok_or("No app data folder")?;
+    if let Some(dir) = path.parent() {
+        std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+    }
+    // Write then rename, so a crash mid-write never leaves a half file behind.
+    let tmp = path.with_extension("json.tmp");
+    std::fs::write(&tmp, serde_json::to_vec(result).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+    std::fs::rename(&tmp, &path).map_err(|e| e.to_string())
+}
+
+fn allow_findings(state: &AppState, result: &ScanResult) {
+    let mut allowed = state.allowed.lock().unwrap();
+    allowed.clear();
+    allowed.extend(result.findings.iter().map(|f: &Finding| scan::key(std::path::Path::new(&f.path))));
+}
+
+/// Restores the previous session's results (and re-arms deletion for exactly those paths).
+#[tauri::command]
+fn load_last_scan(app: AppHandle, state: State<'_, AppState>) -> Option<ScanResult> {
+    let bytes = std::fs::read(cache_file(&app)?).ok()?;
+    let result: ScanResult = serde_json::from_slice(&bytes).ok()?;
+    allow_findings(&state, &result);
+    Some(result)
+}
+
+/// Persists the UI's copy after a clean, so removed items stay removed on next launch.
+#[tauri::command]
+fn save_scan(app: AppHandle, result: ScanResult) -> Result<(), String> {
+    write_cache(&app, &result)
 }
 
 #[tauri::command]
@@ -50,9 +87,10 @@ async fn start_scan(app: AppHandle, state: State<'_, AppState>, opts: ScanOption
     done.store(true, Ordering::Relaxed);
     state.scanning.store(false, Ordering::SeqCst);
     let result = result.map_err(|e| e.to_string())?;
-    let mut allowed = state.allowed.lock().unwrap();
-    allowed.clear();
-    allowed.extend(result.findings.iter().map(|f: &Finding| scan::key(std::path::Path::new(&f.path))));
+    allow_findings(&state, &result);
+    if let Err(e) = write_cache(&app, &result) {
+        eprintln!("could not cache scan: {e}");
+    }
     Ok(result)
 }
 
@@ -182,6 +220,8 @@ pub fn run() {
         .manage(AppState::default())
         .invoke_handler(tauri::generate_handler![
             default_roots,
+            load_last_scan,
+            save_scan,
             start_scan,
             cancel_scan,
             clean_paths,

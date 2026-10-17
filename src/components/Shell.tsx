@@ -20,7 +20,7 @@ import {
 import { useState } from "react";
 import type { CleanProgress } from "../lib/types";
 import { api, isNative } from "../lib/api";
-import { bytes, count } from "../lib/format";
+import { ago, bytes, count } from "../lib/format";
 import { CATEGORIES, CATEGORY } from "../lib/meta";
 import { useStore, type View } from "../state";
 import { AppIcon, Logo, sum } from "./ui";
@@ -216,7 +216,8 @@ export function Tray() {
 }
 
 export function ConfirmSheet() {
-  const { confirmOpen, setConfirmOpen, selectedFindings, cleanSelected, cleaning, cleanProgress, settings, updateSettings, isStale } = useStore();
+  const { confirmOpen, setConfirmOpen, selectedFindings, cleanSelected, cleaning, cleanProgress, settings, updateSettings, isStale, result } = useStore();
+  const oldScan = !!result && Date.now() / 1000 - result.finishedAt > 3600;
   if (!confirmOpen) return null;
   if (cleaning && cleanProgress) return <CleanProgressSheet p={cleanProgress} toTrash={settings.toTrash} />;
   const total = sum(selectedFindings);
@@ -233,6 +234,14 @@ export function ConfirmSheet() {
           </p>
         </header>
         <div className="sheet-body">
+          {oldScan && (
+            <div className="sub-row" style={{ margin: "8px 0", gap: 8 }}>
+              <Info size={16} color="var(--warn-line)" />
+              <span>
+                These results are from {ago(result!.finishedAt)}. If you have built, installed or deleted things since, rescan first: anything that changed may fail to delete.
+              </span>
+            </div>
+          )}
           {heavy.length > 0 && (
             <div className="sub-row" style={{ margin: "8px 0", gap: 8 }}>
               <AlertTriangle size={16} color="var(--warn-line)" />
@@ -320,6 +329,18 @@ export function Toasts() {
           <div className="body">
             <b>{t.title}</b>
             {t.body && <p>{t.body}</p>}
+            {t.action && (
+              <button
+                className="btn sm primary"
+                style={{ marginTop: 8 }}
+                onClick={() => {
+                  t.action!.run();
+                  dismiss(t.id);
+                }}
+              >
+                <RefreshCw size={13} /> {t.action.label}
+              </button>
+            )}
           </div>
           <button className="icon-btn" style={{ width: 24, height: 24 }} aria-label="Dismiss" onClick={() => dismiss(t.id)}>
             <X size={14} />

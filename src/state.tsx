@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { api } from "./lib/api";
-import { bytes, daysSince } from "./lib/format";
+import { ago, bytes, daysSince } from "./lib/format";
 import { useSettings, type Settings } from "./lib/settings";
 import type { CleanProgress, DockerReport, Finding, ScanProgress, ScanResult, TreeNode } from "./lib/types";
 
@@ -11,6 +11,7 @@ export interface Toast {
   kind: "ok" | "error" | "info";
   title: string;
   body?: string;
+  action?: { label: string; run: () => void };
 }
 
 interface Store {
@@ -19,6 +20,8 @@ interface Store {
   view: View;
   setView: (v: View) => void;
   result: ScanResult | null;
+  /** True until the previous session's results have been looked up. */
+  restoring: boolean;
   scanning: boolean;
   progress: ScanProgress | null;
   startScan: () => void;
@@ -70,6 +73,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [settings, updateSettings] = useSettings();
   const [view, setView] = useState<View>("overview");
   const [result, setResult] = useState<ScanResult | null>(null);
+  const [restoring, setRestoring] = useState(true);
   const [scanning, setScanning] = useState(false);
   const [progress, setProgress] = useState<ScanProgress | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -86,13 +90,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     (t: Omit<Toast, "id">) => {
       const id = ++toastId.current;
       setToasts((all) => [...all.slice(-3), { ...t, id }]);
-      setTimeout(() => dismiss(id), t.kind === "error" ? 9000 : 5000);
+      setTimeout(() => dismiss(id), t.action ? 20000 : t.kind === "error" ? 9000 : 5000);
     },
     [dismiss],
   );
 
   useEffect(() => {
     if (settings.roots.length === 0) api.defaultRoots().then((roots) => updateSettings({ roots }));
+    api
+      .lastScan()
+      .then((r) => r && setResult(r))
+      .catch(() => {
+        /* unreadable cache: start empty, the next scan rewrites it */
+      })
+      .finally(() => setRestoring(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -157,17 +168,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const failed = outcomes.filter((o) => !o.ok);
       const freed = items.filter((f) => ok.has(f.path)).reduce((a, f) => a + f.size, 0);
       const removed = new Map(items.filter((f) => ok.has(f.path)).map((f) => [norm(f.path), f.size]));
-      setResult((r) => {
-        if (!r) return r;
+      if (result && ok.size) {
         const byProject = new Map<string, number>();
         for (const f of items) if (ok.has(f.path) && f.project) byProject.set(f.project, (byProject.get(f.project) ?? 0) + f.size);
-        return {
-          ...r,
-          findings: r.findings.filter((f) => !ok.has(f.path)),
-          projects: r.projects.map((p) => (byProject.has(p.path) ? { ...p, size: p.size - byProject.get(p.path)! } : p)),
-          tree: pruneTree(r.tree, removed),
+        const next: ScanResult = {
+          ...result,
+          findings: result.findings.filter((f) => !ok.has(f.path)),
+          projects: result.projects.map((p) => (byProject.has(p.path) ? { ...p, size: p.size - byProject.get(p.path)! } : p)),
+          tree: pruneTree(result.tree, removed),
         };
-      });
+        setResult(next);
+        // Keep the saved copy in step, so cleaned items don't reappear next launch.
+        api.saveScan(next).catch(() => {});
+      }
       setSelected((s) => new Set([...s].filter((p) => !ok.has(p))));
       if (ok.size)
         toast({
@@ -176,7 +189,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           body: `${ok.size} item${ok.size > 1 ? "s" : ""} ${settings.toTrash ? "moved to the Recycle Bin" : "deleted"}.`,
         });
       if (failed.length)
-        toast({ kind: "error", title: `${failed.length} item${failed.length > 1 ? "s" : ""} could not be removed`, body: failed[0].error ?? undefined });
+        toast({
+          kind: "error",
+          title: `${failed.length} item${failed.length > 1 ? "s" : ""} could not be removed`,
+          body: `${failed[0].error ?? "Unknown error"}. Files may have changed since the scan from ${ago(result?.finishedAt)}. Re-run the scan to refresh the list before trying again.`,
+          action: { label: "Rescan now", run: startScan },
+        });
       setConfirmOpen(false);
     } catch (e) {
       toast({ kind: "error", title: "Clean failed", body: String(e) });
@@ -184,7 +202,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setCleaning(false);
       setCleanProgress(null);
     }
-  }, [selectedFindings, settings.toTrash, toast]);
+  }, [selectedFindings, settings.toTrash, toast, result, startScan]);
 
   const isStale = useCallback((t: number | null) => daysSince(t) > settings.staleDays, [settings.staleDays]);
 
@@ -194,6 +212,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     view,
     setView,
     result,
+    restoring,
     scanning,
     progress,
     startScan,

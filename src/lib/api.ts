@@ -23,14 +23,39 @@ async function listen<T>(event: string, cb: (payload: T) => void): Promise<() =>
 }
 
 const mock = () => import("./mock");
+const DEMO_SCAN_KEY = "gnom.demo.lastScan";
 
 export const api = {
   async defaultRoots(): Promise<string[]> {
     return isNative ? invoke("default_roots") : ["C:\\Users\\dev"];
   },
 
+  /** The previous session's results, or null on first run. Demo mode keeps them in localStorage. */
+  async lastScan(): Promise<ScanResult | null> {
+    if (isNative) return invoke<ScanResult | null>("load_last_scan");
+    try {
+      const raw = localStorage.getItem(DEMO_SCAN_KEY);
+      return raw ? (JSON.parse(raw) as ScanResult) : null;
+    } catch {
+      return null;
+    }
+  },
+
+  async saveScan(result: ScanResult): Promise<void> {
+    if (isNative) return invoke("save_scan", { result });
+    try {
+      localStorage.setItem(DEMO_SCAN_KEY, JSON.stringify(result));
+    } catch {
+      /* storage full or blocked: the demo just forgets */
+    }
+  },
+
   async scan(opts: ScanOptions, onProgress: (p: ScanProgress) => void): Promise<ScanResult> {
-    if (!isNative) return (await mock()).mockScan(onProgress);
+    if (!isNative) {
+      const r = await (await mock()).mockScan(onProgress);
+      await api.saveScan(r);
+      return r;
+    }
     const unlisten = await listen<ScanProgress>("scan-progress", onProgress);
     try {
       return await invoke<ScanResult>("start_scan", { opts });

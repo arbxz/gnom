@@ -1,9 +1,11 @@
+import { useEffect } from "react";
 import { ConfirmSheet, Sidebar, TitleBar, Toasts, Tray, Welcome } from "./components/Shell";
 import { DiskMap } from "./components/DiskMap";
 import { Overview } from "./components/Overview";
 import { Projects } from "./components/Projects";
 import { Caches, Docker, LargeFiles, SettingsView } from "./components/Views";
 import { StoreProvider, useStore } from "./state";
+import { checkForUpdates } from "./lib/updater";
 
 function Content() {
   const { view, result, scanning, restoring } = useStore();
@@ -27,7 +29,14 @@ function Content() {
 }
 
 function Frame() {
-  const { view, result, scanning } = useStore();
+  const { view, result, scanning, toast } = useStore();
+
+  // Quiet check on launch: says nothing unless an update is waiting, and never
+  // installs on its own — a delete may be running, and installing restarts.
+  useEffect(() => {
+    void checkForUpdates({ silent: true, toast });
+  }, [toast]);
+
   const bare = (!result || scanning) && view !== "settings" && view !== "docker";
   return (
     <div className="app">

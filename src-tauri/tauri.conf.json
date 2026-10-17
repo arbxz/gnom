@@ -30,13 +30,24 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": [
+      "nsis"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDNDMzVGMzY3RTk0NEI2NDEKUldSQnRrVHBaL00xUFBNT0xMR2hsdm5RbldrbXhRZjhWS1A5OUNuSk1DUWwyN0dDQm9ScStsNlAK",
+      "endpoints": [
+        "https://github.com/arbxz/gnom/releases/latest/download/latest.json"
+      ]
+    }
   }
 }

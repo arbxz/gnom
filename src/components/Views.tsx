@@ -1,6 +1,7 @@
 import { Container, Database, FileWarning, HardDrive, Play, Plus, RefreshCw, Trash2, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "../lib/api";
+import { appVersion, checkForUpdates } from "../lib/updater";
 import { bytes } from "../lib/format";
 import type { DockerActionKind, DockerImage } from "../lib/types";
 import { useStore } from "../state";
@@ -246,7 +247,23 @@ diskpart
 }
 
 export function SettingsView() {
-  const { settings, updateSettings } = useStore();
+  const { settings, updateSettings, toast } = useStore();
+  const [version, setVersion] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
+
+  useEffect(() => {
+    void appVersion().then(setVersion);
+  }, []);
+
+  const onCheckUpdates = async () => {
+    setChecking(true);
+    try {
+      await checkForUpdates({ silent: false, toast });
+    } finally {
+      setChecking(false);
+    }
+  };
+
   const [root, setRoot] = useState("");
   const [ex, setEx] = useState("");
   const addTo = (key: "roots" | "exclude", v: string, reset: () => void) => {
@@ -307,6 +324,19 @@ export function SettingsView() {
             <small>Safer, but slow for huge folders like node_modules, and space is freed only when you empty the bin.</small>
           </div>
           <Switch label="Use Recycle Bin" on={settings.toTrash} onChange={(v) => updateSettings({ toTrash: v })} />
+        </div>
+      </div>
+      <h2 className="list-title">About</h2>
+      <div className="list glass">
+        <div className="settings-row">
+          <div className="body">
+            gnom {version ?? ""}
+            <small>Updates are signed and verified before they install.</small>
+          </div>
+          <button className="btn sm tinted" onClick={onCheckUpdates} disabled={checking}>
+            <RefreshCw size={14} className={checking ? "spin" : ""} />
+            {checking ? "Checking…" : "Check for updates"}
+          </button>
         </div>
       </div>
       <h2 className="list-title">Appearance</h2>

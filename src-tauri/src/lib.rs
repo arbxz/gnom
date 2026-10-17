@@ -216,8 +216,18 @@ fn reveal(path: String) -> Result<(), String> {
 pub fn run() {
     // Deep node_modules / target trees recurse a lot; give the walker roomy stacks.
     let _ = rayon::ThreadPoolBuilder::new().stack_size(8 << 20).build_global();
-    tauri::Builder::default()
-        .manage(AppState::default())
+    let mut builder = tauri::Builder::default().manage(AppState::default());
+
+    // Self-updater + process (relaunch after install) are desktop-only; mobile
+    // stores handle their own updates.
+    #[cfg(desktop)]
+    {
+        builder = builder
+            .plugin(tauri_plugin_updater::Builder::new().build())
+            .plugin(tauri_plugin_process::init());
+    }
+
+    builder
         .invoke_handler(tauri::generate_handler![
             default_roots,
             load_last_scan,

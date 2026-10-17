@@ -11,6 +11,12 @@ importers:
       '@tauri-apps/api':
         specifier: ^2
         version: 2.12.1
+      '@tauri-apps/plugin-process':
+        specifier: ^2.4.0
+        version: 2.4.0
+      '@tauri-apps/plugin-updater':
+        specifier: ^2.14.0
+        version: 2.14.0
       d3-hierarchy:
         specifier: ^3.1.2
         version: 3.1.2
@@ -217,6 +223,12 @@ packages:
     resolution: {integrity: sha512-kEDEiGzG+yAc5FeLxtXpES/VN+F2C8H0r4gDVtfRLKxT9np9101d9REG/Kgo2lr0hKi0IpDsODiHnU3+naOmLg==}
     engines: {node: '>= 10'}
     hasBin: true
+
+  '@tauri-apps/plugin-process@2.4.0':
+    resolution: {integrity: sha512-GddrmsSLAYrLa/yTXlXK/YRDzUgYeeOnUXTbiyvJWkmI424RmDPD3FVLeqcon7rv6O6ZfhBilcrHWnSo7o6hIQ==}
+
+  '@tauri-apps/plugin-updater@2.14.0':
+    resolution: {integrity: sha512-gdylJ9tger4hkyOn24QZd6MNOKVo2Eh53iw5th2Qj1vKTR/+u4PIwJWuiis5hohYvobn6iOvlnALfrqIPSzh7Q==}
 
   '@types/d3-hierarchy@3.1.7':
     resolution: {integrity: sha512-tJFtNoYBtRtkNysX1Xq4sxtjK8YgoWUNpIiUee0/jHGRwqvzYxkq0hGVbbOGSz+JgFxxRu4K8nb3YpG3CMARtg==}
@@ -537,6 +549,14 @@ snapshots:
       '@tauri-apps/cli-win32-arm64-msvc': 2.12.1
       '@tauri-apps/cli-win32-ia32-msvc': 2.12.1
       '@tauri-apps/cli-win32-x64-msvc': 2.12.1
+
+  '@tauri-apps/plugin-process@2.4.0':
+    dependencies:
+      '@tauri-apps/api': 2.12.1
+
+  '@tauri-apps/plugin-updater@2.14.0':
+    dependencies:
+      '@tauri-apps/api': 2.12.1
 
   '@types/d3-hierarchy@3.1.7': {}
 

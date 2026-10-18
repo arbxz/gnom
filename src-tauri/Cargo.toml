@@ -4,6 +4,10 @@ version = "0.1.0"
 description = "gnom: find and clear dev junk eating your disk"
 authors = ["arbxz"]
 edition = "2021"
+repository = "https://github.com/arbxz/gnom"
+homepage = "https://github.com/arbxz/gnom"
+# Proprietary: see LICENSE. Never published to crates.io.
+publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

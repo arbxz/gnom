@@ -2,6 +2,14 @@
   "name": "gnom",
   "private": true,
   "version": "0.1.0",
+  "description": "Find and clear the dev junk eating your disk: build output, node_modules, package caches, Docker leftovers.",
+  "license": "UNLICENSED",
+  "author": "arbxz",
+  "homepage": "https://github.com/arbxz/gnom",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arbxz/gnom.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -1501,3 +1501,21 @@ pre.snippet {
 .tm-tip {
   background: var(--float);
 }
+
+/* Modals are solid: a delete confirmation must never show content through it. */
+:root {
+  --modal: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --modal: #1c1917;
+  }
+}
+:root[data-theme="dark"] {
+  --modal: #1c1917;
+}
+.sheet {
+  background: var(--modal);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}

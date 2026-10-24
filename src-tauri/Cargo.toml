@@ -1,6 +1,6 @@
 [package]
 name = "gnom"
-version = "0.1.0"
+version = "0.1.1"
 description = "gnom: find and clear dev junk eating your disk"
 authors = ["arbxz"]
 edition = "2021"

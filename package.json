@@ -1,7 +1,7 @@
 {
   "name": "gnom",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Find and clear the dev junk eating your disk: build output, node_modules, package caches, Docker leftovers.",
   "license": "UNLICENSED",
   "author": "arbxz",

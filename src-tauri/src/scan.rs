@@ -185,7 +185,7 @@ fn walk(path: &Path, depth: usize, ctx: &Ctx, project: Option<&str>) -> Walked {
     let proj: Option<&str> = if starts_project { Some(&path_str) } else { project };
 
     if let Some(p) = proj {
-        for (fp, size, m) in heavy {
+        for (fp, size, m) in heavy.into_iter().filter(|(fp, ..)| !crate::clean::protected(fp)) {
             let fname = fp.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
             ctx.c.found.fetch_add(1, Relaxed);
             ctx.findings.lock().unwrap().push(Finding {
@@ -218,9 +218,13 @@ fn walk(path: &Path, depth: usize, ctx: &Ctx, project: Option<&str>) -> Walked {
                 return Some(Walked { node: leaf(n, p, size, Some(Category::Global)), max_mtime: 0 });
             }
             let lower = n.to_ascii_lowercase();
-            let rule = rules::classify(n, &name, &sib).or_else(|| {
-                (lower.contains("env") && p.join("pyvenv.cfg").is_file()).then(rules::venv_rule)
-            });
+            let rule = if crate::clean::protected(p) {
+                None
+            } else {
+                rules::classify(n, &name, &sib).or_else(|| {
+                    (lower.contains("env") && p.join("pyvenv.cfg").is_file()).then(rules::venv_rule)
+                })
+            };
             if let Some(r) = rule {
                 let agg = size_tree(p, ctx.c);
                 if agg.size > 0 {

@@ -88,6 +88,18 @@ export interface DockerContainer {
   image: string;
   state: string;
   status: string;
+  runningFor: string;
+}
+
+export interface DockerVolume {
+  name: string;
+  driver: string;
+  /** 0 when Docker doesn't report sizes. */
+  size: number;
+  /** Referenced by a container, running or stopped. */
+  inUse: boolean;
+  /** Unnamed (64-hex id), usually created by an image's VOLUME line. */
+  anonymous: boolean;
 }
 
 export interface DfRow {
@@ -111,11 +123,12 @@ export interface DockerReport {
   version: string | null;
   images: DockerImage[];
   containers: DockerContainer[];
+  volumes: DockerVolume[];
   df: DfRow[];
   disks: VirtualDisk[];
 }
 
-export type DockerActionKind = "removeImages" | "pruneDangling" | "pruneContainers" | "pruneBuildCache" | "pruneVolumes";
+export type DockerActionKind = "removeImages" | "removeContainers" | "removeVolumes" | "pruneDangling" | "pruneBuildCache";
 
 export interface Dep {
   name: string;

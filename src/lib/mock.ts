@@ -236,9 +236,17 @@ export async function mockDocker(): Promise<DockerReport> {
       img("redis", "7-alpine", 4.1e7, "2 months ago", true),
     ],
     containers: [
-      { id: "a1", name: "shop-web-1", image: "shop-monorepo-web", state: "running", status: "Up 3 hours" },
-      { id: "b2", name: "shop-db-1", image: "postgres:16", state: "running", status: "Up 3 hours" },
-      { id: "c3", name: "redis", image: "redis:7-alpine", state: "exited", status: "Exited (0) 2 weeks ago" },
+      { id: "a1", name: "shop-web-1", image: "shop-monorepo-web", state: "running", status: "Up 3 hours", runningFor: "3 hours ago" },
+      { id: "b2", name: "shop-db-1", image: "postgres:16", state: "running", status: "Up 3 hours", runningFor: "3 hours ago" },
+      { id: "c3", name: "redis", image: "redis:7-alpine", state: "exited", status: "Exited (0) 2 weeks ago", runningFor: "2 months ago" },
+      { id: "d4", name: "blog-db", image: "postgres:16", state: "exited", status: "Exited (0) 5 days ago", runningFor: "4 months ago" },
+    ],
+    volumes: [
+      { name: "shop_pgdata", driver: "local", size: 6.4e8, inUse: true, anonymous: false },
+      { name: "blog_pgdata", driver: "local", size: 3.1e8, inUse: true, anonymous: false },
+      { name: "old-api_mongo", driver: "local", size: 1.1e9, inUse: false, anonymous: false },
+      { name: "4f2a9c0d1e7b3a65c8d2e9f10b4a7c3e5d8f1a2b6c9e0d3f7a1b4c8e2d5f9a0b", driver: "local", size: 4.2e8, inUse: false, anonymous: true },
+      { name: "9b1e5d3c7a2f0e8d4c6b1a9f3e7d5c2b8a0f4e6d1c3b7a9e5f2d8c0b6a4e1f3d", driver: "local", size: 6.0e7, inUse: false, anonymous: true },
     ],
     df: [
       { kind: "Images", total: 7, active: 3, size: 15.1e9, reclaimable: 13.2e9 },

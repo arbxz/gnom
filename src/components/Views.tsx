@@ -1,4 +1,4 @@
-import { Container, Database, FileWarning, HardDrive, Play, Plus, RefreshCw, Trash2, X } from "lucide-react";
+import { AlertTriangle, Container, Database, FileWarning, HardDrive, Play, Plus, RefreshCw, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { appVersion, checkForUpdates } from "../lib/updater";
@@ -85,28 +85,75 @@ export function LargeFiles() {
   );
 }
 
-const DF_ACTION: Record<string, { kind: DockerActionKind; label: string }> = {
-  Images: { kind: "pruneDangling", label: "Prune dangling" },
-  Containers: { kind: "pruneContainers", label: "Prune stopped" },
-  "Local Volumes": { kind: "pruneVolumes", label: "Prune unused" },
-  "Build Cache": { kind: "pruneBuildCache", label: "Prune cache" },
+/** A docker action waiting for the user to confirm it in a sheet. */
+interface Pending {
+  kind: DockerActionKind;
+  ids: string[];
+  names: string[];
+  title: string;
+  body: string;
+  warn?: string;
+  confirm: string;
+  done: string;
+}
+
+/** Only the two prunes that touch nothing but rebuildable data get a one-step action. */
+const PRUNE: Record<string, Omit<Pending, "ids" | "names">> = {
+  Images: {
+    kind: "pruneDangling",
+    title: "Prune dangling images?",
+    body: "Removes untagged images that no container uses. Tagged images are kept.",
+    confirm: "Prune dangling",
+    done: "Dangling images pruned",
+  },
+  "Build Cache": {
+    kind: "pruneBuildCache",
+    title: "Clear the build cache?",
+    body: "Removes cached build layers that no image needs. Your next builds take longer while it refills.",
+    confirm: "Clear cache",
+    done: "Build cache cleared",
+  },
 };
+
+const short = (id: string) => id.replace("sha256:", "").slice(0, 12);
+const plural = (n: number, word: string) => `${n} ${word}${n > 1 ? "s" : ""}`;
+const STOPPED = new Set(["exited", "created", "dead"]);
+const DB_IMAGE = /postgres|mysql|mariadb|mongo|redis|elastic|opensearch|clickhouse|cassandra|neo4j|influx|couch|db/i;
+
+function useToggleSet() {
+  const [set, setSet] = useState<Set<string>>(new Set());
+  const toggle = (id: string) =>
+    setSet((s) => {
+      const n = new Set(s);
+      if (!n.delete(id)) n.add(id);
+      return n;
+    });
+  return [set, toggle, () => setSet(new Set())] as const;
+}
 
 export function Docker() {
   const { docker, dockerLoading, loadDocker, toast } = useStore();
-  const [sel, setSel] = useState<Set<string>>(new Set());
+  const [selImg, toggleImg, clearImg] = useToggleSet();
+  const [selCon, toggleCon, clearCon] = useToggleSet();
+  const [selVol, toggleVol, clearVol] = useToggleSet();
+  const [pending, setPending] = useState<Pending | null>(null);
   const [busy, setBusy] = useState(false);
-  const act = (kind: DockerActionKind, ids: string[] = [], label = "Done") => {
+  const run = (p: Pending) => {
     setBusy(true);
     api
-      .dockerAction(kind, ids)
+      .dockerAction(p.kind, p.ids)
       .then((out) => {
-        toast({ kind: "ok", title: label, body: out.trim().split("\n").slice(-1)[0] });
-        setSel(new Set());
+        toast({ kind: "ok", title: p.done, body: out.trim().split("\n").slice(-1)[0] });
+        clearImg();
+        clearCon();
+        clearVol();
         loadDocker();
       })
       .catch((e) => toast({ kind: "error", title: "Docker command failed", body: String(e).slice(0, 300) }))
-      .finally(() => setBusy(false));
+      .finally(() => {
+        setBusy(false);
+        setPending(null);
+      });
   };
 
   const head = (
@@ -130,8 +177,55 @@ export function Docker() {
     );
   }
   const unused = docker.images.filter((i) => !i.inUse);
-  const toggle = (id: string) => setSel((s) => (s.has(id) ? (s.delete(id), new Set(s)) : new Set(s.add(id))));
-  const selSize = docker.images.filter((i) => sel.has(i.id)).reduce((a, i) => a + i.size, 0);
+  const pickedImages = docker.images.filter((i) => selImg.has(i.id));
+  const stopped = docker.containers.filter((c) => STOPPED.has(c.state));
+  const pickedContainers = docker.containers.filter((c) => selCon.has(c.id));
+  const volumes = docker.volumes ?? [];
+  const freeVolumes = volumes.filter((v) => !v.inUse);
+  const pickedVolumes = volumes.filter((v) => selVol.has(v.name));
+  const volSize = sum(pickedVolumes);
+
+  const askImages = () =>
+    setPending({
+      kind: "removeImages",
+      ids: pickedImages.map((i) => i.id),
+      names: pickedImages.map((i) => (i.dangling ? short(i.id) : `${i.repo}:${i.tag}`)),
+      title: `Remove ${plural(pickedImages.length, "image")} · ${bytes(sum(pickedImages))}?`,
+      body: "You can pull or rebuild them later. Docker refuses any image a container still uses.",
+      confirm: "Remove images",
+      done: `Removed ${plural(pickedImages.length, "image")}`,
+    });
+  const askContainers = () => {
+    const dbs = pickedContainers.filter((c) => DB_IMAGE.test(c.image));
+    setPending({
+      kind: "removeContainers",
+      ids: pickedContainers.map((c) => c.id),
+      names: pickedContainers.map((c) => `${c.name} · ${c.image}`),
+      title: `Remove ${plural(pickedContainers.length, "stopped container")}?`,
+      body: "Anything written inside a container, outside its volumes, is lost. Volumes are kept and stay listed under Volumes.",
+      warn: dbs.length
+        ? `${dbs.map((c) => c.name).join(", ")} ${dbs.length > 1 ? "look like databases" : "looks like a database"}. Data kept without a volume goes too.`
+        : undefined,
+      confirm: "Remove containers",
+      done: `Removed ${plural(pickedContainers.length, "container")}`,
+    });
+  };
+  const askVolumes = () => {
+    const named = pickedVolumes.filter((v) => !v.anonymous);
+    setPending({
+      kind: "removeVolumes",
+      ids: pickedVolumes.map((v) => v.name),
+      names: pickedVolumes.map((v) => (v.anonymous ? `${short(v.name)} (anonymous)` : v.name)),
+      title: `Delete ${plural(pickedVolumes.length, "volume")}${volSize ? ` · ${bytes(volSize)}` : ""}?`,
+      body: "Volumes hold databases, uploads and anything else containers keep. This cannot be undone.",
+      warn: named.length
+        ? `Named volumes are usually created on purpose, often by a compose project you may start again: ${named.map((v) => v.name).join(", ")}.`
+        : undefined,
+      confirm: "Delete volumes",
+      done: `Deleted ${plural(pickedVolumes.length, "volume")}`,
+    });
+  };
+
   return (
     <>
       {head}
@@ -143,47 +237,136 @@ export function Docker() {
             <div className="caption">
               {r.active}/{r.total} active · <b style={{ color: "var(--text-2)" }}>{bytes(r.reclaimable)}</b> reclaimable
             </div>
-            {DF_ACTION[r.kind] && (
-              <button className="btn sm danger-tinted" disabled={busy || !r.reclaimable} onClick={() => act(DF_ACTION[r.kind].kind, [], `${r.kind} pruned`)}>
-                {DF_ACTION[r.kind].label}
+            {PRUNE[r.kind] && (
+              <button className="btn sm danger-tinted" disabled={busy || !r.reclaimable} onClick={() => setPending({ ...PRUNE[r.kind], ids: [], names: [] })}>
+                {PRUNE[r.kind].confirm}
               </button>
             )}
           </div>
         ))}
       </div>
+
       <h2 className="list-title" style={{ justifyContent: "space-between" }}>
         <span>Images · {unused.length} not used by any container</span>
-        {sel.size > 0 && (
-          <button className="btn sm danger" disabled={busy} onClick={() => act("removeImages", [...sel], `Removed ${sel.size} image${sel.size > 1 ? "s" : ""}`)}>
-            <Trash2 size={13} /> Remove {sel.size} · {bytes(selSize)}
+        {selImg.size > 0 && (
+          <button className="btn sm danger" disabled={busy} onClick={askImages}>
+            <Trash2 size={13} /> Remove {selImg.size} · {bytes(sum(pickedImages))}
           </button>
         )}
       </h2>
       <div className="list glass">
         {docker.images.length === 0 && <Empty icon={Container} title="No images" />}
         {docker.images.map((i) => (
-          <ImageRow key={i.id} i={i} checked={sel.has(i.id)} onToggle={() => toggle(i.id)} />
+          <ImageRow key={i.id} i={i} checked={selImg.has(i.id)} onToggle={() => toggleImg(i.id)} />
         ))}
       </div>
+
       {docker.containers.length > 0 && (
         <>
-          <h2 className="list-title">Containers</h2>
+          <h2 className="list-title" style={{ justifyContent: "space-between" }}>
+            <span>Containers · {stopped.length} stopped</span>
+            {selCon.size > 0 && (
+              <button className="btn sm danger" disabled={busy} onClick={askContainers}>
+                <Trash2 size={13} /> Remove {selCon.size}
+              </button>
+            )}
+          </h2>
           <div className="list glass">
-            {docker.containers.map((c) => (
-              <div key={c.id} className="row">
-                <span className="dot" style={{ borderRadius: "50%", background: c.state === "running" ? "var(--ok-line)" : "var(--text-3)" }} />
-                <div className="body">
-                  <div className="title">{c.name}</div>
-                  <div className="subtitle mono">{c.image}</div>
+            {docker.containers.map((c) => {
+              const removable = STOPPED.has(c.state);
+              return (
+                <div key={c.id} className={`row${removable ? " clickable" : ""}`} onClick={removable ? () => toggleCon(c.id) : undefined}>
+                  {removable ? <Check checked={selCon.has(c.id)} onChange={() => toggleCon(c.id)} label={`Select ${c.name}`} /> : <span style={{ width: 22 }} />}
+                  <span className="dot" style={{ borderRadius: "50%", background: c.state === "running" ? "var(--ok-line)" : "var(--text-3)" }} />
+                  <div className="body">
+                    <div className="title">
+                      <span className="truncate">{c.name}</span>
+                      {removable && DB_IMAGE.test(c.image) && <span className="chip warn">Database?</span>}
+                    </div>
+                    <div className="subtitle mono">{c.image}</div>
+                  </div>
+                  <span className="secondary">{c.status}</span>
                 </div>
-                <span className="secondary">{c.status}</span>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {volumes.length > 0 && (
+        <>
+          <h2 className="list-title" style={{ justifyContent: "space-between" }}>
+            <span>Volumes · {freeVolumes.length} not used by any container</span>
+            {selVol.size > 0 && (
+              <button className="btn sm danger" disabled={busy} onClick={askVolumes}>
+                <Trash2 size={13} /> Delete {selVol.size}
+                {volSize ? ` · ${bytes(volSize)}` : ""}
+              </button>
+            )}
+          </h2>
+          <div className="list glass">
+            {volumes.map((v) => (
+              <div key={v.name} className={`row${v.inUse ? "" : " clickable"}`} onClick={v.inUse ? undefined : () => toggleVol(v.name)}>
+                {v.inUse ? <span style={{ width: 22 }} /> : <Check checked={selVol.has(v.name)} onChange={() => toggleVol(v.name)} label={`Select volume ${v.name}`} />}
+                <Database size={18} className="muted" />
+                <div className="body">
+                  <div className="title">
+                    <span className="truncate mono">{v.anonymous ? short(v.name) : v.name}</span>
+                    {v.anonymous && <span className="chip">Anonymous</span>}
+                    {v.inUse ? <span className="chip ok">In use</span> : <span className="chip">Unused</span>}
+                  </div>
+                  <div className="subtitle">{v.inUse ? "Attached to a container" : "No container refers to it, but it may still hold data"}</div>
+                </div>
+                <div className="size">{v.size ? bytes(v.size) : "–"}</div>
               </div>
             ))}
           </div>
         </>
       )}
       <VirtualDisks />
+      {pending && <DockerSheet p={pending} busy={busy} onCancel={() => setPending(null)} onConfirm={() => run(pending)} />}
     </>
+  );
+}
+
+function DockerSheet({ p, busy, onCancel, onConfirm }: { p: Pending; busy: boolean; onCancel: () => void; onConfirm: () => void }) {
+  return (
+    <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && !busy && onCancel()}>
+      <div className="sheet glass" role="dialog" aria-modal="true" aria-labelledby="docker-sheet-title" onKeyDown={(e) => e.key === "Escape" && !busy && onCancel()}>
+        <header>
+          <h2 id="docker-sheet-title">{p.title}</h2>
+          <p className="secondary" style={{ margin: "4px 0 0" }}>
+            {p.body}
+          </p>
+        </header>
+        <div className="sheet-body">
+          {p.warn && (
+            <div className="sub-row" style={{ margin: "8px 0", gap: 8 }}>
+              <AlertTriangle size={16} color="var(--warn-line)" style={{ flexShrink: 0 }} />
+              <span>{p.warn}</span>
+            </div>
+          )}
+          {p.names.map((n) => (
+            <div key={n} className="row" style={{ minHeight: 40 }}>
+              <div className="body">
+                <div className="title">
+                  <span className="truncate mono">{n}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <footer>
+          <span className="grow" />
+          <button className="btn" onClick={onCancel} disabled={busy} autoFocus>
+            Cancel
+          </button>
+          <button className="btn danger" onClick={onConfirm} disabled={busy}>
+            <Trash2 size={15} /> {busy ? "Working…" : p.confirm}
+          </button>
+        </footer>
+      </div>
+    </div>
   );
 }
 

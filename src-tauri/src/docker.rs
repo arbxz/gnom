@@ -27,6 +27,20 @@ pub struct DockerContainer {
     pub image: String,
     pub state: String,
     pub status: String,
+    pub running_for: String,
+}
+
+#[derive(Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct DockerVolume {
+    pub name: String,
+    pub driver: String,
+    /// 0 when Docker doesn't report sizes.
+    pub size: u64,
+    /// Referenced by at least one container, running or stopped.
+    pub in_use: bool,
+    /// No name was given (a 64-hex id): usually created by an image's VOLUME line.
+    pub anonymous: bool,
 }
 
 #[derive(Serialize, Default)]
@@ -56,6 +70,7 @@ pub struct DockerReport {
     pub version: Option<String>,
     pub images: Vec<DockerImage>,
     pub containers: Vec<DockerContainer>,
+    pub volumes: Vec<DockerVolume>,
     pub df: Vec<DfRow>,
     pub disks: Vec<VirtualDisk>,
 }
@@ -184,9 +199,11 @@ pub fn report() -> DockerReport {
                 image: field(v, "Image"),
                 state: field(v, "State"),
                 status: field(v, "Status"),
+                running_for: field(v, "RunningFor"),
             })
             .collect();
     }
+    r.volumes = volumes();
     if let Ok(s) = docker(&["image", "ls", "--no-trunc", "--format", "{{json .}}"]) {
         r.images = json_lines(&s)
             .iter()
@@ -210,21 +227,68 @@ pub fn report() -> DockerReport {
     r
 }
 
-/// Runs one of a fixed set of docker clean-ups. Image ids are validated as hex digests.
-pub fn action(kind: &str, ids: &[String]) -> Result<String, String> {
-    match kind {
-        "removeImages" => {
-            if ids.is_empty() || !ids.iter().all(|i| i.trim_start_matches("sha256:").chars().all(|c| c.is_ascii_hexdigit())) {
-                return Err("Invalid image id".into());
+fn volumes() -> Vec<DockerVolume> {
+    let Ok(s) = docker(&["volume", "ls", "--format", "{{json .}}"]) else { return Vec::new() };
+    let dangling: HashSet<String> = docker(&["volume", "ls", "-q", "--filter", "dangling=true"])
+        .unwrap_or_default()
+        .lines()
+        .map(|l| l.trim().to_string())
+        .collect();
+    // Sizes come only from the verbose df; without them the list still works.
+    let mut sizes = std::collections::HashMap::new();
+    if let Ok(df) = docker(&["system", "df", "-v", "--format", "{{json .Volumes}}"]) {
+        if let Ok(Value::Array(rows)) = serde_json::from_str::<Value>(df.trim()) {
+            for v in rows {
+                sizes.insert(field(&v, "Name"), parse_size(&field(&v, "Size")));
             }
-            let mut args = vec!["image", "rm"];
-            args.extend(ids.iter().map(String::as_str));
-            docker(&args)
         }
+    }
+    let mut v: Vec<DockerVolume> = json_lines(&s)
+        .iter()
+        .map(|v| {
+            let name = field(v, "Name");
+            DockerVolume {
+                size: sizes.get(&name).copied().unwrap_or(0),
+                in_use: !dangling.contains(&name),
+                anonymous: name.len() == 64 && name.chars().all(|c| c.is_ascii_hexdigit()),
+                driver: field(v, "Driver"),
+                name,
+            }
+        })
+        .collect();
+    v.sort_by(|a, b| a.in_use.cmp(&b.in_use).then(b.size.cmp(&a.size)));
+    v
+}
+
+fn hex_ids(ids: &[String]) -> bool {
+    !ids.is_empty() && ids.iter().all(|i| !i.is_empty() && i.trim_start_matches("sha256:").chars().all(|c| c.is_ascii_hexdigit()))
+}
+
+/// Docker's own rule for volume names; also rules out anything that looks like a flag.
+fn volume_names(ids: &[String]) -> bool {
+    !ids.is_empty()
+        && ids.iter().all(|n| {
+            n.chars().next().is_some_and(|c| c.is_ascii_alphanumeric())
+                && n.chars().all(|c| c.is_ascii_alphanumeric() || "_.-".contains(c))
+        })
+}
+
+/// Runs one of a fixed set of docker clean-ups on items the user picked.
+/// Nothing here forces: Docker refuses running containers and volumes or images still in use.
+pub fn action(kind: &str, ids: &[String]) -> Result<String, String> {
+    let with = |base: &[&'static str], ids: &[String]| {
+        let mut args: Vec<&str> = base.to_vec();
+        args.extend(ids.iter().map(String::as_str));
+        docker(&args)
+    };
+    match kind {
+        "removeImages" if hex_ids(ids) => with(&["image", "rm"], ids),
+        // No -v: a container's volumes are kept and show up in the volume list instead.
+        "removeContainers" if hex_ids(ids) => with(&["container", "rm"], ids),
+        "removeVolumes" if volume_names(ids) => with(&["volume", "rm"], ids),
         "pruneDangling" => docker(&["image", "prune", "-f"]),
-        "pruneContainers" => docker(&["container", "prune", "-f"]),
         "pruneBuildCache" => docker(&["builder", "prune", "-f"]),
-        "pruneVolumes" => docker(&["volume", "prune", "-f"]),
+        "removeImages" | "removeContainers" | "removeVolumes" => Err("Invalid id".into()),
         _ => Err(format!("Unknown docker action {kind}")),
     }
 }
@@ -237,5 +301,28 @@ mod tests {
         assert_eq!(super::parse_size("512kB"), 512_000);
         assert_eq!(super::parse_size("0B"), 0);
         assert_eq!(super::parse_size("2.4GB (50%)"), 2_400_000_000);
+    }
+
+    #[test]
+    fn rejects_unsafe_ids() {
+        let v = |x: &[&str]| x.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+        assert!(super::action("removeVolumes", &v(&["--all"])).is_err());
+        assert!(super::action("removeVolumes", &v(&["a b"])).is_err());
+        assert!(super::action("removeContainers", &v(&["web-1"])).is_err());
+        assert!(super::action("pruneVolumes", &[]).is_err());
+        assert!(super::action("pruneContainers", &[]).is_err());
+        assert!(super::volume_names(&v(&["shop_pgdata", "0f3e"])));
+    }
+
+    #[test]
+    fn protects_docker_data() {
+        use crate::clean::protected;
+        let local = dirs::data_local_dir().unwrap();
+        assert!(protected(&local.join("Docker/wsl/disk/docker_data.vhdx")));
+        assert!(protected(&local.join("Docker")));
+        assert!(protected(&local));
+        assert!(protected(std::path::Path::new(r"D:\wsl\Ubuntu\ext4.vhdx")));
+        assert!(!protected(std::path::Path::new(r"C:\code\app\node_modules")));
+        assert!(!protected(&dirs::home_dir().unwrap().join("code/app/target")));
     }
 }

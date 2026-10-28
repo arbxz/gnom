@@ -81,7 +81,7 @@ export function Overview() {
             <AppIcon icon={Container} size={30} />
             <div>
               <div className="value">{bytes(dockerReclaim)}</div>
-              <div style={{ fontWeight: 600 }}>Docker</div>
+              <div style={{ fontWeight: 600 }}>{docker.engine ?? "Containers"}</div>
               <div className="caption">Reclaimable images, cache & volumes</div>
             </div>
           </button>

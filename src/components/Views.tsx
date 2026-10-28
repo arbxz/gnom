@@ -157,7 +157,10 @@ export function Docker() {
   };
 
   const head = (
-    <PageHead title="Docker" sub={docker?.version ? `Engine ${docker.version}` : "Images, containers, volumes and build cache"}>
+    <PageHead
+      title="Containers"
+      sub={docker?.running ? `${docker.engine} ${docker.version}` : "Docker Desktop, Rancher Desktop or Podman: images, containers, volumes and build cache"}
+    >
       <button className="btn sm" onClick={loadDocker} disabled={dockerLoading}>
         <RefreshCw size={14} /> Refresh
       </button>
@@ -168,8 +171,11 @@ export function Docker() {
       <>
         {head}
         <div className="glass list">
-          <Empty icon={Container} title={dockerLoading ? "Asking Docker…" : docker?.installed ? "Docker isn't running" : "Docker not found"}>
-            {dockerLoading ? null : docker?.error ?? "Start Docker Desktop, then refresh."}
+          <Empty
+            icon={Container}
+            title={dockerLoading ? "Looking for a container engine…" : docker?.installed ? `${docker.engine ?? "The engine"} isn't running` : "No container engine found"}
+          >
+            {dockerLoading ? null : docker?.error ?? "Start Docker Desktop, Rancher Desktop or your Podman machine, then refresh."}
           </Empty>
         </div>
         {docker && <VirtualDisks />}
@@ -191,7 +197,7 @@ export function Docker() {
       ids: pickedImages.map((i) => i.id),
       names: pickedImages.map((i) => (i.dangling ? short(i.id) : `${i.repo}:${i.tag}`)),
       title: `Remove ${plural(pickedImages.length, "image")} · ${bytes(sum(pickedImages))}?`,
-      body: "You can pull or rebuild them later. Docker refuses any image a container still uses.",
+      body: "You can pull or rebuild them later. Your engine refuses any image a container still uses.",
       confirm: "Remove images",
       done: `Removed ${plural(pickedImages.length, "image")}`,
     });
@@ -400,7 +406,7 @@ function VirtualDisks() {
       </h2>
       <div className="card glass">
         <p className="sub" style={{ marginBottom: 8 }}>
-          Docker Desktop and WSL store data in .vhdx files that grow but <b>never shrink on their own</b>. After pruning, compact them to give the space back to Windows.
+          Docker Desktop, Rancher Desktop, Podman and every WSL distro store their data in .vhdx files that grow but <b>never shrink on their own</b>. gnom never deletes them. After pruning, compact one to give the space back to Windows.
         </p>
         {docker.disks.map((d) => (
           <div key={d.path} className="sub-row" style={{ marginBottom: 6 }}>
@@ -413,7 +419,7 @@ function VirtualDisks() {
             </span>
           </div>
         ))}
-        <pre className="snippet">{`# Quit Docker Desktop, then in an admin terminal:
+        <pre className="snippet">{`# Quit Docker Desktop, Rancher Desktop or Podman, then in an admin terminal:
 wsl --shutdown
 diskpart
   select vdisk file="${docker.disks[0].path}"

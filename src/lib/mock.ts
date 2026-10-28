@@ -224,6 +224,7 @@ export async function mockDocker(): Promise<DockerReport> {
   return {
     installed: true,
     running: true,
+    engine: "Docker",
     error: null,
     version: "29.8.0",
     images: [

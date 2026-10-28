@@ -18,7 +18,7 @@ To uninstall, use **Windows Settings → Apps → gnom**.
 
 - **Project junk**: `node_modules`, Rust and Tauri `target/`, `.next`, `dist`, `.turbo`, `__pycache__`, Python venvs, `.gradle`, .NET `bin/obj`, Flutter `.dart_tool`, CMake builds, and more. Each item is tied to its project and flagged **stale** when the project hasn't been touched for a set number of days.
 - **Package caches**: pnpm store, npm, Yarn, Bun, Cargo registry, pip/uv, Gradle, Maven, NuGet, Go, Playwright, Cypress, and more. Where a tool has an official clean command (`pnpm store prune`, `npm cache clean --force`, …), gnom can run it for you.
-- **Docker**: unused or dangling images, stopped containers, unused volumes and build cache, plus the WSL `.vhdx` files that never shrink by themselves. Containers and volumes are removed only one by one, as you pick them.
+- **Containers** (Docker Desktop, Rancher Desktop or Podman): unused or dangling images, stopped containers, unused volumes and build cache, plus the WSL `.vhdx` files that never shrink by themselves. Containers and volumes are removed only one by one, as you pick them.
 - **Heavy files** inside projects: recordings, dumps, model weights, archives, debug symbols.
 - **Unused npm deps**: a quick check for packages in `package.json` that nothing imports.
 - **Disk map**: a zoomable map of everything scanned, with the dev junk in colour.
@@ -29,7 +29,13 @@ To uninstall, use **Windows Settings → Apps → gnom**.
 - You choose between deleting permanently (fast) and moving to the Recycle Bin (slow for huge folders, and the space comes back only when you empty the bin).
 - Dependencies and builds come back with the restore command shown next to them (`pnpm install`, `cargo build`, …). Heavy files don't, so gnom never bulk-selects them.
 - Links and junctions (pnpm's `node_modules` is full of them) are removed without touching what they point to.
-- Docker and WSL data (`%LOCALAPPDATA%\Docker`, `ext4.vhdx`, `docker_data.vhdx`, `~/.docker`) is never reported as junk and never deleted from disk. Docker changes go through the Docker CLI, each one confirmed first; Docker itself refuses to remove anything still in use.
+- Some places are never deleted from disk:
+  - container engines and their data: Docker Desktop, Rancher Desktop, Podman, minikube, Lima;
+  - every WSL distro folder and any `.vhd`/`.vhdx` disk;
+  - virtual machines: Hyper-V, VirtualBox, VMware;
+  - installed programs, under Program Files and `%LOCALAPPDATA%\Programs`.
+- Folders inside AppData and ProgramData belong to installed apps, so gnom reports no junk there. Package caches are the exception: they are found by their known locations.
+- Container changes go through the engine's own CLI, and you confirm each one first. The engine itself refuses to remove anything still in use.
 - If a delete fails, files probably changed since the scan: rescan and try again.
 
 ## Your data and the network

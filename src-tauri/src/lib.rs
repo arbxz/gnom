@@ -1,6 +1,7 @@
 mod clean;
 mod deps;
 mod docker;
+mod guard;
 mod model;
 mod rules;
 mod scan;

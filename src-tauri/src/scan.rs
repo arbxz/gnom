@@ -180,12 +180,14 @@ fn walk(path: &Path, depth: usize, ctx: &Ctx, project: Option<&str>) -> Walked {
     let has_git = names.contains(".git");
     let manifest = rules::MANIFESTS.iter().any(|(m, _)| names.contains(*m))
         || names.iter().any(|n| n.ends_with(".csproj") || n.ends_with(".sln"));
-    let starts_project = has_git || (project.is_none() && manifest);
+    // Apps and engines ship package.json files and .git folders too; they are not your projects.
+    let off = crate::guard::off_limits(path);
+    let starts_project = !off && (has_git || (project.is_none() && manifest));
     let path_str = path.to_string_lossy().into_owned();
     let proj: Option<&str> = if starts_project { Some(&path_str) } else { project };
 
     if let Some(p) = proj {
-        for (fp, size, m) in heavy.into_iter().filter(|(fp, ..)| !crate::clean::protected(fp)) {
+        for (fp, size, m) in heavy.into_iter().filter(|(fp, ..)| !off && !crate::guard::protected(fp)) {
             let fname = fp.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
             ctx.c.found.fetch_add(1, Relaxed);
             ctx.findings.lock().unwrap().push(Finding {
@@ -218,7 +220,7 @@ fn walk(path: &Path, depth: usize, ctx: &Ctx, project: Option<&str>) -> Walked {
                 return Some(Walked { node: leaf(n, p, size, Some(Category::Global)), max_mtime: 0 });
             }
             let lower = n.to_ascii_lowercase();
-            let rule = if crate::clean::protected(p) {
+            let rule = if crate::guard::off_limits(p) {
                 None
             } else {
                 rules::classify(n, &name, &sib).or_else(|| {
@@ -386,6 +388,10 @@ mod tests {
         println!("{} files, {} MB in {} ms, {} projects", r.files, r.bytes >> 20, r.duration_ms, r.projects.len());
         for f in r.findings.iter().take(25) {
             println!("{:>8} MB  {:?} {:<16} {} {:?}", f.size >> 20, f.category, f.label, f.path, f.tags);
+        }
+        // GNOM_OUT=path saves the whole result, in the format of the app's last-scan.json.
+        if let Ok(out) = std::env::var("GNOM_OUT") {
+            std::fs::write(out, serde_json::to_string(&r).unwrap()).unwrap();
         }
     }
 }

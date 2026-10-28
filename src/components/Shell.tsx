@@ -61,7 +61,7 @@ const NAV: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "projects", label: "Projects", icon: FolderGit2 },
   { id: "caches", label: "Package caches", icon: Database },
-  { id: "docker", label: "Docker", icon: Container },
+  { id: "docker", label: "Containers", icon: Container },
   { id: "large", label: "Heavy files", icon: FileWarning },
   { id: "map", label: "Disk map", icon: LayoutGrid },
 ];
@@ -158,7 +158,7 @@ export function Welcome() {
         <Logo size={64} />
         <h1>Find the gigabytes your builds left behind</h1>
         <p>
-          gnom looks for <b>node_modules</b>, Rust &amp; Tauri <b>target</b> folders, stale build output, package caches, heavy files and Docker leftovers — then lets you clear them safely.
+          gnom looks for <b>node_modules</b>, Rust &amp; Tauri <b>target</b> folders, stale build output, package caches, heavy files and container leftovers — then lets you clear them safely.
         </p>
         <div className="roots" aria-label="Folders to scan">
           {settings.roots.map((r) => (

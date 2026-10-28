@@ -6,47 +6,6 @@ use rayon::prelude::*;
 use std::path::Path;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-/// Docker and WSL keep every image, container and volume in a few folders and .vhdx disks.
-/// Deleting one of them wipes all of it, so these are never reported and never removed,
-/// whatever the scan says (for example when a dotfiles repo turns the whole home into a project).
-pub fn protected(path: &Path) -> bool {
-    let p = norm(path);
-    let name = p.rsplit('\\').next().unwrap_or("");
-    if name == "ext4.vhdx" || name == "docker_data.vhdx" {
-        return true;
-    }
-    // Inside a protected folder, or a folder that contains one.
-    protected_roots().iter().any(|r| p == *r || p.starts_with(&format!("{r}\\")) || r.starts_with(&format!("{p}\\")))
-}
-
-fn norm(p: &Path) -> String {
-    p.to_string_lossy().replace('/', "\\").trim_end_matches('\\').to_lowercase()
-}
-
-/// Looked up once: the scanner asks about every folder it visits.
-fn protected_roots() -> &'static [String] {
-    static ROOTS: std::sync::OnceLock<Vec<String>> = std::sync::OnceLock::new();
-    ROOTS.get_or_init(|| {
-        let mut roots = Vec::new();
-        if let Some(d) = dirs::data_local_dir() {
-            roots.push(d.join("Docker"));
-            roots.push(d.join("Packages"));
-        }
-        if let Some(d) = dirs::data_dir() {
-            roots.push(d.join("Docker"));
-            roots.push(d.join("Docker Desktop"));
-        }
-        if let Some(h) = dirs::home_dir() {
-            roots.push(h.join(".docker"));
-        }
-        if let Some(pd) = std::env::var_os("ProgramData") {
-            roots.push(Path::new(&pd).join("Docker"));
-            roots.push(Path::new(&pd).join("DockerDesktop"));
-        }
-        roots.iter().map(|r| norm(r)).collect()
-    })
-}
-
 fn make_writable(path: &Path) {
     if let Ok(md) = fs::symlink_metadata(path) {
         let mut perm = md.permissions();
@@ -88,8 +47,8 @@ fn remove_tree(dir: &Path, freed: &AtomicU64) -> std::io::Result<()> {
 
 /// `freed` grows as bytes are deleted; Recycle Bin moves only report once at the end.
 pub fn remove(path: &Path, to_trash: bool, size: u64, freed: &AtomicU64) -> Result<(), String> {
-    if protected(path) {
-        return Err("gnom never deletes Docker or WSL data; use the Docker page instead".into());
+    if crate::guard::protected(path) {
+        return Err("gnom never deletes container, VM or installed app data".into());
     }
     if to_trash {
         trash::delete(path).map_err(|e| e.to_string())?;

@@ -29,6 +29,7 @@ To uninstall, use **Windows Settings → Apps → gnom**.
 - You choose between deleting permanently (fast) and moving to the Recycle Bin (slow for huge folders, and the space comes back only when you empty the bin).
 - Dependencies and builds come back with the restore command shown next to them (`pnpm install`, `cargo build`, …). Heavy files don't, so gnom never bulk-selects them.
 - Links and junctions (pnpm's `node_modules` is full of them) are removed without touching what they point to.
+- A build or dependency folder with files committed to git is treated as source and never reported.
 - Some places are never deleted from disk:
   - container engines and their data: Docker Desktop, OrbStack, Rancher Desktop, Podman, minikube, Lima;
   - every WSL distro folder and any `.vhd`/`.vhdx` disk;

@@ -88,6 +88,18 @@ pub fn disk_size(md: &fs::Metadata) -> u64 {
     }
 }
 
+/// Whether git tracks anything in this folder: then it is source, whatever its name. `dist` and
+/// `build` often hold committed icons or configs. If git can't answer, the files are still in
+/// history, so the folder is treated as untracked.
+fn has_tracked_files(dir: &Path) -> bool {
+    // Only ask inside a repo: on a Mac without developer tools, running git opens an install dialog.
+    if !dir.ancestors().skip(1).any(|a| a.join(".git").exists()) {
+        return false;
+    }
+    let out = crate::docker::cmd("git").arg("-C").arg(dir).args(["ls-files", "-z", "--", "."]).output();
+    out.is_ok_and(|o| o.status.success() && !o.stdout.is_empty())
+}
+
 /// The volume a folder lives on, where the platform says.
 fn device(md: &fs::Metadata) -> Option<u64> {
     #[cfg(unix)]
@@ -261,6 +273,7 @@ fn walk(path: &Path, depth: usize, ctx: &Ctx, project: Option<&str>) -> Walked {
                     (lower.contains("env") && p.join("pyvenv.cfg").is_file()).then(rules::venv_rule)
                 })
             };
+            let rule = rule.filter(|_| !has_tracked_files(p));
             if let Some(r) = rule {
                 let agg = size_tree(p, ctx.c);
                 if agg.size > 0 {
@@ -411,6 +424,30 @@ pub fn run(opts: &ScanOptions, c: &Counters) -> ScanResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn tracked_build_folders_are_not_junk() {
+        let base = std::env::temp_dir().join(format!("gnom-tracked-{}", std::process::id()));
+        let git = |args: &[&str]| crate::docker::cmd("git").arg("-C").arg(&base).args(args).output().unwrap();
+        for dir in ["build", "dist", "node_modules/pkg"] {
+            fs::create_dir_all(base.join(dir)).unwrap();
+        }
+        fs::write(base.join("package.json"), "{}").unwrap();
+        fs::write(base.join("build/icon.png"), vec![0u8; 100]).unwrap();
+        fs::write(base.join("dist/app.js"), vec![0u8; 100]).unwrap();
+        fs::write(base.join("node_modules/pkg/index.js"), vec![0u8; 100]).unwrap();
+        fs::write(base.join(".gitignore"), "dist\nnode_modules\n").unwrap();
+        git(&["init", "-q"]);
+        git(&["add", "."]);
+
+        let c = Counters::default();
+        let r = run(&ScanOptions { roots: vec![base.to_string_lossy().into_owned()], exclude: vec![], large_file_mb: 100 }, &c);
+        let found: Vec<String> = r.findings.iter().filter(|f| f.category != Category::Global).map(|f| f.path.clone()).collect();
+        assert!(found.iter().any(|p| p.ends_with("dist")), "{found:?}");
+        assert!(found.iter().any(|p| p.ends_with("node_modules")), "{found:?}");
+        assert!(!found.iter().any(|p| p.contains("build")), "{found:?}");
+        fs::remove_dir_all(&base).unwrap();
+    }
 
     #[cfg(unix)]
     #[test]

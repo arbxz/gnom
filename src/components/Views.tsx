@@ -159,7 +159,7 @@ export function Docker() {
   const head = (
     <PageHead
       title="Containers"
-      sub={docker?.running ? `${docker.engine} ${docker.version}` : "Docker Desktop, Rancher Desktop or Podman: images, containers, volumes and build cache"}
+      sub={docker?.running ? `${docker.engine} ${docker.version}` : "Docker Desktop, OrbStack, Rancher Desktop or Podman: images, containers, volumes and build cache"}
     >
       <button className="btn sm" onClick={loadDocker} disabled={dockerLoading}>
         <RefreshCw size={14} /> Refresh
@@ -175,7 +175,7 @@ export function Docker() {
             icon={Container}
             title={dockerLoading ? "Looking for a container engine…" : docker?.installed ? `${docker.engine ?? "The engine"} isn't running` : "No container engine found"}
           >
-            {dockerLoading ? null : docker?.error ?? "Start Docker Desktop, Rancher Desktop or your Podman machine, then refresh."}
+            {dockerLoading ? null : docker?.error ?? "Start Docker Desktop, OrbStack, Rancher Desktop or your Podman machine, then refresh."}
           </Empty>
         </div>
         {docker && <VirtualDisks />}
@@ -399,6 +399,32 @@ function ImageRow({ i, checked, onToggle }: { i: DockerImage; checked: boolean; 
 function VirtualDisks() {
   const { docker } = useStore();
   if (!docker?.disks.length) return null;
+  // Only WSL disks have Windows paths, and only they need compacting by hand.
+  if (!docker.disks[0].path.includes("\\")) {
+    return (
+      <>
+        <h2 className="list-title">
+          <HardDrive size={14} /> Virtual disks
+        </h2>
+        <div className="card glass">
+          <p className="sub" style={{ marginBottom: 8 }}>
+            Your container engine keeps its data in a sparse disk image, shown here at the space it really uses. gnom never deletes these. Space freed by pruning goes back to macOS by itself, sometimes after a few minutes.
+          </p>
+          {docker.disks.map((d) => (
+            <div key={d.path} className="sub-row" style={{ marginBottom: 6 }}>
+              <div className="body" style={{ flex: 1, minWidth: 0 }}>
+                <b>{d.label}</b>
+                <div className="mono muted truncate">{d.path}</div>
+              </div>
+              <span className="num" style={{ fontWeight: 650 }}>
+                {bytes(d.size)}
+              </span>
+            </div>
+          ))}
+        </div>
+      </>
+    );
+  }
   return (
     <>
       <h2 className="list-title">

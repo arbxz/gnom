@@ -74,6 +74,34 @@ fn mtime(md: &fs::Metadata) -> u64 {
     md.modified().ok().and_then(|t| t.duration_since(UNIX_EPOCH).ok()).map(|d| d.as_secs()).unwrap_or(0)
 }
 
+/// Bytes a file really takes. Sparse VM disks claim far more than they use: OrbStack's and
+/// Docker Desktop's report nearly 1 TB whatever they hold.
+pub fn disk_size(md: &fs::Metadata) -> u64 {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        md.len().min(md.blocks() * 512)
+    }
+    #[cfg(not(unix))]
+    {
+        md.len()
+    }
+}
+
+/// The volume a folder lives on, where the platform says.
+fn device(md: &fs::Metadata) -> Option<u64> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        Some(md.dev())
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = md;
+        None
+    }
+}
+
 pub fn now() -> u64 {
     SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)
 }
@@ -111,7 +139,7 @@ pub fn size_tree(path: &Path, c: &Counters) -> Agg {
         if ft.is_dir() {
             subdirs.push(e.path());
         } else if let Ok(md) = e.metadata() {
-            let s = md.len();
+            let s = disk_size(&md);
             agg.size += s;
             agg.files += 1;
             agg.max_mtime = agg.max_mtime.max(mtime(&md));
@@ -164,7 +192,7 @@ fn walk(path: &Path, depth: usize, ctx: &Ctx, project: Option<&str>) -> Walked {
         if ft.is_dir() {
             subdirs.push((e.path(), fname));
         } else if let Ok(md) = e.metadata() {
-            let s = md.len();
+            let s = disk_size(&md);
             own_size += s;
             own_files += 1;
             let m = mtime(&md);
@@ -209,11 +237,17 @@ fn walk(path: &Path, depth: usize, ctx: &Ctx, project: Option<&str>) -> Walked {
     }
 
     let sib = Siblings { names: &names };
+    let here = fs::metadata(path).ok().as_ref().and_then(device);
     let children: Vec<Option<Walked>> = subdirs
         .par_iter()
         .map(|(p, n)| {
             let k = key(p);
             if ctx.exclude.contains(&k) {
+                return None;
+            }
+            // A mount is another disk or a view of one (~/OrbStack, network shares): add it as
+            // a root to scan it. On macOS this also means a scan of / stays off the data volume.
+            if here.is_some() && fs::symlink_metadata(p).ok().as_ref().and_then(device) != here {
                 return None;
             }
             if let Some(&size) = ctx.globals.get(&k) {
@@ -377,6 +411,22 @@ pub fn run(opts: &ScanOptions, c: &Counters) -> ScanResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(unix)]
+    #[test]
+    fn sparse_files_count_what_they_use() {
+        let p = std::env::temp_dir().join(format!("gnom-sparse-{}", std::process::id()));
+        let f = fs::File::create(&p).unwrap();
+        f.set_len(1 << 32).unwrap();
+        let md = fs::metadata(&p).unwrap();
+        assert_eq!(md.len(), 1 << 32);
+        assert!(disk_size(&md) < 1 << 20);
+        fs::remove_file(&p).unwrap();
+        let small = std::env::temp_dir().join(format!("gnom-small-{}", std::process::id()));
+        fs::write(&small, b"hello").unwrap();
+        assert_eq!(disk_size(&fs::metadata(&small).unwrap()), 5);
+        fs::remove_file(&small).unwrap();
+    }
 
     /// `GNOM_ROOT=C:\code cargo test --lib real_scan -- --ignored --nocapture`
     #[test]

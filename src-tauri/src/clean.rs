@@ -10,6 +10,13 @@ fn make_writable(path: &Path) {
     if let Ok(md) = fs::symlink_metadata(path) {
         let mut perm = md.permissions();
         if perm.readonly() {
+            // Owner only on Unix: a folder needs read and search too before it can be emptied.
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                perm.set_mode(perm.mode() | if md.is_dir() { 0o700 } else { 0o200 });
+            }
+            #[cfg(not(unix))]
             #[allow(clippy::permissions_set_readonly_false)]
             perm.set_readonly(false);
             let _ = fs::set_permissions(path, perm);
@@ -20,6 +27,8 @@ fn make_writable(path: &Path) {
 /// Deletes a tree file by file so progress can be reported in bytes. Links and
 /// junctions (pnpm's node_modules is full of them) are unlinked, never followed.
 fn remove_tree(dir: &Path, freed: &AtomicU64) -> std::io::Result<()> {
+    // On Unix a file can't be unlinked from a read-only folder, and Go's module cache is all of them.
+    make_writable(dir);
     let mut subdirs = Vec::new();
     for e in fs::read_dir(dir)?.flatten() {
         let p = e.path();
@@ -100,6 +109,24 @@ pub fn reveal(path: &Path) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(unix)]
+    #[test]
+    fn removes_read_only_folders() {
+        use std::os::unix::fs::PermissionsExt;
+        let base = std::env::temp_dir().join(format!("gnom-readonly-{}", std::process::id()));
+        let inner = base.join("mod/pkg@v1");
+        fs::create_dir_all(&inner).unwrap();
+        fs::write(inner.join("go.mod"), vec![0u8; 100]).unwrap();
+        fs::set_permissions(inner.join("go.mod"), fs::Permissions::from_mode(0o444)).unwrap();
+        fs::set_permissions(&inner, fs::Permissions::from_mode(0o555)).unwrap();
+        fs::set_permissions(base.join("mod"), fs::Permissions::from_mode(0o555)).unwrap();
+
+        let freed = AtomicU64::new(0);
+        remove(&base, false, 100, &freed).unwrap();
+        assert!(!base.exists());
+        assert_eq!(freed.load(Ordering::Relaxed), 100);
+    }
 
     #[test]
     fn removes_tree_without_following_junctions() {

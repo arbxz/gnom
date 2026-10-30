@@ -8,13 +8,15 @@
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
-/// Virtual disk formats of Hyper-V and WSL: always attached to some VM or distro.
-const VM_DISK_EXT: &[&str] = &["vhd", "vhdx", "avhdx"];
+/// Virtual disk formats: always attached to some VM or distro.
+const VM_DISK_EXT: &[&str] = &["vhd", "vhdx", "avhdx", "vmdk", "vdi", "qcow2"];
+/// Docker Desktop's and OrbStack's disks on macOS, wherever their data folder was moved to.
+const VM_DISK_NAMES: &[&str] = &["docker.raw", "data.img.raw"];
 
 pub fn protected(path: &Path) -> bool {
     let p = norm(path);
     let name = p.rsplit('\\').next().unwrap_or("");
-    if name.rsplit_once('.').is_some_and(|(_, ext)| VM_DISK_EXT.contains(&ext)) {
+    if VM_DISK_NAMES.contains(&name) || name.rsplit_once('.').is_some_and(|(_, ext)| VM_DISK_EXT.contains(&ext)) {
         return true;
     }
     // Inside a protected folder, or a folder that contains one.
@@ -28,6 +30,7 @@ pub fn off_limits(path: &Path) -> bool {
 
 /// A WSL distro: Docker Desktop, Rancher Desktop and Podman machines all run as one.
 pub struct Distro {
+    #[cfg_attr(target_os = "macos", allow(dead_code))]
     pub name: String,
     pub base: PathBuf,
 }
@@ -87,8 +90,14 @@ fn roots() -> &'static Roots {
         protected.extend(under(&roaming, &["Docker", "Docker Desktop", "rancher-desktop", "containers"]));
         protected.extend(under(
             &home,
-            &[".docker", ".rd", ".local/share/containers", ".config/containers", ".lima", ".colima", ".orbstack", ".minikube", ".kube", ".vagrant.d", "VirtualBox VMs", "Documents/Virtual Machines"],
+            &[".docker", ".rd", ".local/share/containers", ".config/containers", ".lima", ".colima", ".orbstack", "OrbStack", ".minikube", ".kube", ".vagrant.d", "VirtualBox VMs", "Documents/Virtual Machines"],
         ));
+        if cfg!(target_os = "macos") {
+            // ~/OrbStack is a live, writable view of container volumes. The two Library folders
+            // hold every sandboxed app's data, including OrbStack's and Docker Desktop's disks.
+            protected.extend(under(&home, &["Library/Containers", "Library/Group Containers", "Library/Developer/CoreSimulator", "Applications", "Virtual Machines.localized", "Parallels"]));
+            protected.extend(["/Applications", "/Library", "/System", "/usr", "/opt"].iter().map(PathBuf::from));
+        }
         protected.extend(under(
             &program_data,
             &["Docker", "DockerDesktop", "containers", "Multipass", r"Microsoft\Windows\Hyper-V", r"Microsoft\Windows\Virtual Hard Disks"],
@@ -103,6 +112,11 @@ fn roots() -> &'static Roots {
         app_data.extend(roaming);
         app_data.extend(local.as_ref().and_then(|l| l.parent().map(|p| p.join("LocalLow"))));
         app_data.extend(program_data);
+        // Apps own all of ~/Library, not just Application Support. Package caches inside it
+        // are found by their known locations.
+        if cfg!(target_os = "macos") {
+            app_data.extend(home.as_ref().map(|h| h.join("Library")));
+        }
 
         let norm_all = |v: Vec<PathBuf>| v.iter().map(|p| norm(p)).filter(|p| !p.is_empty()).collect();
         Roots { protected: norm_all(protected), app_data: norm_all(app_data) }
@@ -146,5 +160,29 @@ mod tests {
         assert!(!protected(&local.join(r"pnpm\store")));
         // Ancestors of protected folders are not off limits, so projects in the home folder still count.
         assert!(!off_limits(&home));
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn guards_orbstack_and_docker_on_macos() {
+        let home = dirs::home_dir().unwrap();
+        for p in [
+            home.join("OrbStack/docker/volumes/shop_data/node_modules"),
+            home.join("Library/Group Containers/HUAQ24HBR6.dev.orbstack/data/data.img.raw"),
+            home.join("Library/Containers/com.docker.docker/Data/vms/0/data/Docker.raw"),
+            home.join("Library/Developer/CoreSimulator/Devices"),
+            PathBuf::from("/Volumes/ext/orbstack/data.img.raw"),
+            PathBuf::from("/Volumes/ext/Docker.raw"),
+            PathBuf::from("/Applications/Some.app/Contents/Resources/node_modules"),
+        ] {
+            assert!(protected(&p), "{} should be protected", p.display());
+            assert!(off_limits(&p) || p.starts_with("/Volumes"), "{} should not be scanned", p.display());
+        }
+        // Everything else in ~/Library is skipped by the scanner, yet known caches stay deletable.
+        assert!(off_limits(&home.join("Library/Mobile Documents/app/node_modules")));
+        for p in [home.join("Library/Caches/pnpm"), home.join("Library/Developer/Xcode/DerivedData"), home.join("code/app/node_modules")] {
+            assert!(!protected(&p), "{} should be deletable", p.display());
+        }
+        assert!(!off_limits(&home.join("code/app/node_modules")));
     }
 }

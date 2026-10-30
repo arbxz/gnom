@@ -68,7 +68,7 @@ pub struct VirtualDisk {
 pub struct DockerReport {
     pub installed: bool,
     pub running: bool,
-    /// "Docker", "Podman" or "nerdctl": the engine this report came from.
+    /// "Docker", "OrbStack", "Podman" or "nerdctl": the engine this report came from.
     pub engine: Option<String>,
     pub error: Option<String>,
     pub version: Option<String>,
@@ -87,11 +87,33 @@ pub fn cmd(program: &str) -> Command {
         const CREATE_NO_WINDOW: u32 = 0x0800_0000;
         c.creation_flags(CREATE_NO_WINDOW);
     }
+    #[cfg(target_os = "macos")]
+    c.env("PATH", tool_path());
     c
 }
 
-/// Container CLIs gnom can drive, in the order it tries them. Docker Desktop and Rancher Desktop
-/// (moby mode) ship `docker`, Rancher Desktop in containerd mode ships `nerdctl`, Podman ships `podman`.
+/// Apps opened from Finder get only /usr/bin:/bin:/usr/sbin:/sbin, which holds none of the tools
+/// gnom drives. Shell profiles are not run for this: they can print, prompt or hang.
+#[cfg(target_os = "macos")]
+fn tool_path() -> &'static std::ffi::OsStr {
+    static PATH: std::sync::OnceLock<std::ffi::OsString> = std::sync::OnceLock::new();
+    PATH.get_or_init(|| {
+        let mut dirs: Vec<PathBuf> = std::env::var_os("PATH").map(|p| std::env::split_paths(&p).collect()).unwrap_or_default();
+        dirs.extend(["/opt/homebrew/bin", "/usr/local/bin", "/opt/local/bin", "/Applications/Docker.app/Contents/Resources/bin"].map(PathBuf::from));
+        if let Some(home) = dirs::home_dir() {
+            for rel in [".orbstack/bin", ".docker/bin", ".rd/bin", ".local/bin", "Library/pnpm", ".volta/bin", ".bun/bin", ".cargo/bin", "go/bin"] {
+                dirs.push(home.join(rel));
+            }
+            if let Ok(rd) = std::fs::read_dir(home.join(".nvm/versions/node")) {
+                dirs.extend(rd.flatten().map(|e| e.path().join("bin")));
+            }
+        }
+        std::env::join_paths(dirs).unwrap_or_default()
+    })
+}
+
+/// Container CLIs gnom can drive, in the order it tries them. Docker Desktop, OrbStack and Rancher
+/// Desktop (moby mode) ship `docker`, Rancher Desktop in containerd mode ships `nerdctl`, Podman ships `podman`.
 #[derive(Clone, Copy, PartialEq, Debug)]
 enum Engine {
     Docker,
@@ -233,7 +255,37 @@ pub fn parse_size(s: &str) -> u64 {
     (n * mult) as u64
 }
 
-/// The .vhdx disks behind every WSL distro (Docker Desktop, Rancher Desktop, Podman machines, Ubuntu…).
+/// What the running engine calls itself: OrbStack answers through the `docker` CLI.
+fn engine_label(e: Engine) -> String {
+    if e == Engine::Docker {
+        if let Ok(os) = e.run(&["info", "--format", "{{.OperatingSystem}}"]) {
+            if os.to_ascii_lowercase().contains("orbstack") {
+                return "OrbStack".into();
+            }
+        }
+    }
+    e.label().into()
+}
+
+/// The disks behind Docker Desktop and OrbStack on macOS, and behind every WSL distro on Windows
+/// (Docker Desktop, Rancher Desktop, Podman machines, Ubuntu…).
+#[cfg(target_os = "macos")]
+fn virtual_disks() -> Vec<VirtualDisk> {
+    let Some(home) = dirs::home_dir() else { return Vec::new() };
+    [
+        ("OrbStack", "Library/Group Containers/HUAQ24HBR6.dev.orbstack/data/data.img.raw"),
+        ("Docker Desktop", "Library/Containers/com.docker.docker/Data/vms/0/data/Docker.raw"),
+    ]
+    .into_iter()
+    .filter_map(|(label, rel)| {
+        let p = home.join(rel);
+        let md = std::fs::metadata(&p).ok()?;
+        Some(VirtualDisk { label: label.into(), path: p.to_string_lossy().into_owned(), size: crate::scan::disk_size(&md) })
+    })
+    .collect()
+}
+
+#[cfg(not(target_os = "macos"))]
 fn virtual_disks() -> Vec<VirtualDisk> {
     let mut found: Vec<(String, PathBuf)> = Vec::new();
     if let Some(local) = dirs::data_local_dir() {
@@ -266,7 +318,7 @@ pub fn report() -> DockerReport {
     let mut r = DockerReport { disks: virtual_disks(), ..Default::default() };
     let installed: Vec<Engine> = Engine::ALL.into_iter().filter(|e| e.installed()).collect();
     if installed.is_empty() {
-        r.error = Some("No container engine found. gnom works with Docker Desktop, Rancher Desktop and Podman.".into());
+        r.error = Some("No container engine found. gnom works with Docker Desktop, OrbStack, Rancher Desktop and Podman.".into());
         return r;
     }
     r.installed = true;
@@ -291,7 +343,7 @@ pub fn report() -> DockerReport {
         return r;
     };
     r.running = true;
-    r.engine = Some(e.label().into());
+    r.engine = Some(engine_label(e));
     let fmt = e.json();
 
     if e != Engine::Nerdctl {
@@ -492,6 +544,18 @@ mod tests {
         assert!(super::action("pruneVolumes", &[]).is_err());
         assert!(super::action("pruneContainers", &[]).is_err());
         assert!(super::volume_names(&v(&["shop_pgdata", "0f3e"])));
+    }
+
+    /// Talks to the real engine: `cargo test --lib real_report -- --ignored --nocapture`
+    #[test]
+    #[ignore]
+    fn real_report() {
+        let r = super::report();
+        println!("engine={:?} running={} version={:?} error={:?}", r.engine, r.running, r.version, r.error);
+        println!("{} images, {} containers, {} volumes, {} df rows", r.images.len(), r.containers.len(), r.volumes.len(), r.df.len());
+        for d in &r.disks {
+            println!("{:>8} MB  {} {}", d.size >> 20, d.label, d.path);
+        }
     }
 
 }

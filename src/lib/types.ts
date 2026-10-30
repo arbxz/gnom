@@ -119,7 +119,7 @@ export interface VirtualDisk {
 export interface DockerReport {
   installed: boolean;
   running: boolean;
-  /** "Docker", "Podman" or "nerdctl": the engine the report came from. */
+  /** "Docker", "OrbStack", "Podman" or "nerdctl": the engine the report came from. */
   engine: string | null;
   error: string | null;
   version: string | null;

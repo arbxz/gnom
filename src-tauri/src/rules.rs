@@ -142,10 +142,10 @@ pub fn global_caches() -> Vec<GlobalCache> {
     let mut add = |id, label, path: PathBuf, command, note| v.push(GlobalCache { id, label, path, command, note });
 
     add("npm", "npm cache", if cfg!(windows) { data.join("npm-cache") } else { home.join(".npm") }, Some("npm cache clean --force"), None);
-    add("pnpm", "pnpm store", if cfg!(windows) { data.join("pnpm").join("store") } else { home.join(".local/share/pnpm/store") }, Some("pnpm store prune"),
+    add("pnpm", "pnpm store", if cfg!(windows) { data.join("pnpm").join("store") } else if cfg!(target_os = "macos") { home.join("Library/pnpm/store") } else { home.join(".local/share/pnpm/store") }, Some("pnpm store prune"),
         Some("Prune keeps packages still linked by a project; deleting the folder forces full re-downloads."));
     add("pnpm-cache", "pnpm metadata cache", if cfg!(windows) { data.join("pnpm-cache") } else { local.join("pnpm") }, None, None);
-    add("yarn", "Yarn cache", if cfg!(windows) { data.join("Yarn").join("Cache") } else { local.join("yarn") }, Some("yarn cache clean"), None);
+    add("yarn", "Yarn cache", if cfg!(windows) { data.join("Yarn").join("Cache") } else if cfg!(target_os = "macos") { local.join("Yarn") } else { local.join("yarn") }, Some("yarn cache clean"), None);
     add("bun", "Bun cache", home.join(".bun").join("install").join("cache"), Some("bun pm cache rm"), None);
     add("node-gyp", "node-gyp headers", if cfg!(windows) { data.join("node-gyp").join("Cache") } else { local.join("node-gyp") }, None, None);
     add("electron", "Electron downloads", if cfg!(windows) { data.join("electron").join("Cache") } else { local.join("electron") }, None, None);
@@ -157,7 +157,7 @@ pub fn global_caches() -> Vec<GlobalCache> {
         Some("Crates re-download on next build. `cargo install cargo-cache` gives finer control."));
     add("cargo-git", "Cargo git checkouts", home.join(".cargo").join("git"), None, None);
     add("pip", "pip cache", if cfg!(windows) { data.join("pip").join("Cache") } else { local.join("pip") }, Some("pip cache purge"), None);
-    add("uv", "uv cache", if cfg!(windows) { data.join("uv").join("cache") } else { local.join("uv") }, Some("uv cache clean"), None);
+    add("uv", "uv cache", if cfg!(windows) { data.join("uv").join("cache") } else { home.join(".cache").join("uv") }, Some("uv cache clean"), None);
     add("poetry", "Poetry cache", if cfg!(windows) { data.join("pypoetry").join("Cache") } else { local.join("pypoetry") }, None, None);
     add("gradle", "Gradle caches", home.join(".gradle").join("caches"), None, None);
     add("maven", "Maven repository", home.join(".m2").join("repository"), None, None);
@@ -165,7 +165,7 @@ pub fn global_caches() -> Vec<GlobalCache> {
     add("go", "Go module cache", home.join("go").join("pkg").join("mod"), Some("go clean -modcache"), None);
     add("go-build", "Go build cache", if cfg!(windows) { data.join("go-build") } else { local.join("go-build") }, Some("go clean -cache"), None);
     add("deno", "Deno cache", if cfg!(windows) { data.join("deno") } else { local.join("deno") }, None, None);
-    add("composer", "Composer cache", if cfg!(windows) { data.join("Composer") } else { local.join("composer") }, Some("composer clear-cache"), None);
+    add("composer", "Composer cache", if cfg!(windows) { data.join("Composer") } else if cfg!(target_os = "macos") { home.join(".composer").join("cache") } else { local.join("composer") }, Some("composer clear-cache"), None);
     add("huggingface", "Hugging Face models", home.join(".cache").join("huggingface"), None,
         Some("Downloaded model weights; they come back on next use but can be large to re-fetch."));
     add("pub", "Dart pub cache", if cfg!(windows) { data.join("Pub").join("Cache") } else { home.join(".pub-cache") }, Some("dart pub cache clean"), None);
@@ -174,7 +174,13 @@ pub fn global_caches() -> Vec<GlobalCache> {
     add("typescript", "TS server cache", if cfg!(windows) { data.join("Microsoft").join("TypeScript") } else { local.join("typescript") }, None, None);
     add("turbo", "Turborepo cache", if cfg!(windows) { data.join("turborepo") } else { local.join("turborepo") }, None, None);
     #[cfg(target_os = "macos")]
-    add("xcode", "Xcode DerivedData", home.join("Library/Developer/Xcode/DerivedData"), None, None);
+    {
+        add("xcode", "Xcode DerivedData", home.join("Library/Developer/Xcode/DerivedData"), None, None);
+        add("ios-device-support", "iOS DeviceSupport", home.join("Library/Developer/Xcode/iOS DeviceSupport"), None,
+            Some("Symbols for devices you have connected. Xcode copies them again the next time you plug one in."));
+        add("cocoapods", "CocoaPods cache", local.join("CocoaPods"), Some("pod cache clean --all"), None);
+        add("homebrew", "Homebrew downloads", local.join("Homebrew"), None, None);
+    }
     v.into_iter().filter(|c| c.path.is_dir()).collect()
 }
 

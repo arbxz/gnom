@@ -1,0 +1,18 @@
+{
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "gnom",
+        "width": 1240,
+        "height": 800,
+        "minWidth": 940,
+        "minHeight": 620,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "trafficLightPosition": { "x": 16, "y": 16 },
+        "center": true
+      }
+    ]
+  }
+}

@@ -50,7 +50,9 @@ fn allow_findings(state: &AppState, result: &ScanResult) {
 #[tauri::command]
 fn load_last_scan(app: AppHandle, state: State<'_, AppState>) -> Option<ScanResult> {
     let bytes = std::fs::read(cache_file(&app)?).ok()?;
-    let result: ScanResult = serde_json::from_slice(&bytes).ok()?;
+    let mut result: ScanResult = serde_json::from_slice(&bytes).ok()?;
+    // A scan saved by an older version may list places gnom now leaves alone.
+    result.findings.retain(|f| f.category == model::Category::Global || !guard::off_limits(std::path::Path::new(&f.path)));
     allow_findings(&state, &result);
     Some(result)
 }

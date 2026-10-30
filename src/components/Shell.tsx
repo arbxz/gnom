@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import type { CleanProgress } from "../lib/types";
-import { api, isNative } from "../lib/api";
+import { api, isMac, isNative, trashName } from "../lib/api";
 import { ago, bytes, count } from "../lib/format";
 import { CATEGORIES, CATEGORY } from "../lib/meta";
 import { useStore, type View } from "../state";
@@ -28,19 +28,19 @@ import { AppIcon, Logo, sum } from "./ui";
 export function TitleBar() {
   const { scanning, startScan, result } = useStore();
   return (
-    <div className="titlebar glass">
+    <div className={`titlebar glass${isNative && isMac ? " mac" : ""}`}>
       <div className="brand" data-tauri-drag-region>
         <Logo />
         gnom
       </div>
       {!isNative && <span className="chip accent">Demo data</span>}
-      <div className="drag" data-tauri-drag-region onMouseDown={(e) => e.detail === 2 && api.window("toggleMaximize")} />
+      <div className="drag" data-tauri-drag-region onMouseDown={(e) => !isMac && e.detail === 2 && api.window("toggleMaximize")} />
       {result && (
         <button className="btn sm tinted" onClick={startScan} disabled={scanning}>
           <RefreshCw size={14} className={scanning ? "spin" : ""} /> {scanning ? "Scanning…" : "Rescan"}
         </button>
       )}
-      {isNative && (
+      {isNative && !isMac && (
         <div className="winctl">
           <button aria-label="Minimize" onClick={() => api.window("minimize")}>
             <Minus size={16} />
@@ -230,7 +230,7 @@ export function ConfirmSheet() {
           <h2 id="sheet-title">Clean {bytes(total)}?</h2>
           <p className="secondary" style={{ margin: "4px 0 0" }}>
             {selectedFindings.length} item{selectedFindings.length > 1 ? "s" : ""}.{" "}
-            {settings.toTrash ? "They go to the Recycle Bin, so the space is freed only once you empty it." : "They are deleted permanently. Dependencies and builds come back with the restore command shown."}
+            {settings.toTrash ? `They go to the ${trashName}, so the space is freed only once you empty it.` : "They are deleted permanently. Dependencies and builds come back with the restore command shown."}
           </p>
         </header>
         <div className="sheet-body">
@@ -274,14 +274,14 @@ export function ConfirmSheet() {
         <footer>
           <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
             <input type="checkbox" className="check" checked={settings.toTrash} onChange={() => updateSettings({ toTrash: !settings.toTrash })} />
-            <span className="secondary">Use Recycle Bin</span>
+            <span className="secondary">Use {trashName}</span>
           </label>
           <span className="grow" />
           <button className="btn" onClick={() => setConfirmOpen(false)} disabled={cleaning} autoFocus>
             Cancel
           </button>
           <button className="btn danger" onClick={cleanSelected} disabled={cleaning}>
-            <Trash2 size={15} /> {cleaning ? "Cleaning…" : settings.toTrash ? "Move to Recycle Bin" : "Delete permanently"}
+            <Trash2 size={15} /> {cleaning ? "Cleaning…" : settings.toTrash ? `Move to ${trashName}` : "Delete permanently"}
           </button>
         </footer>
       </div>
@@ -295,7 +295,7 @@ function CleanProgressSheet({ p, toTrash }: { p: CleanProgress; toTrash: boolean
     <div className="scrim">
       <div className="sheet glass" role="dialog" aria-modal="true" aria-labelledby="progress-title">
         <header>
-          <h2 id="progress-title">{toTrash ? "Moving to Recycle Bin…" : "Deleting…"}</h2>
+          <h2 id="progress-title">{toTrash ? `Moving to ${trashName}…` : "Deleting…"}</h2>
           <p className="secondary" style={{ margin: "4px 0 0" }}>
             Item {Math.min(p.index + 1, p.count)} of {p.count}. You can keep browsing once this finishes.
           </p>

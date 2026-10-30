@@ -25,7 +25,10 @@ pub fn protected(path: &Path) -> bool {
 
 pub fn off_limits(path: &Path) -> bool {
     let p = norm(path);
-    roots().protected.iter().chain(&roots().app_data).any(|r| inside(&p, r))
+    // Hidden folders in the home folder belong to tools: ~/.vscode, ~/.nvm, ~/.cache and so on
+    // ship their own dist and node_modules. Package caches there are found by known locations.
+    let hidden = p.strip_prefix(&roots().home).is_some_and(|rest| rest.starts_with("\\."));
+    hidden || roots().protected.iter().chain(&roots().app_data).any(|r| inside(&p, r))
 }
 
 /// A WSL distro: Docker Desktop, Rancher Desktop and Podman machines all run as one.
@@ -67,6 +70,7 @@ pub fn wsl_distros() -> &'static [Distro] {
 }
 
 struct Roots {
+    home: String,
     protected: Vec<String>,
     app_data: Vec<String>,
 }
@@ -119,7 +123,7 @@ fn roots() -> &'static Roots {
         }
 
         let norm_all = |v: Vec<PathBuf>| v.iter().map(|p| norm(p)).filter(|p| !p.is_empty()).collect();
-        Roots { protected: norm_all(protected), app_data: norm_all(app_data) }
+        Roots { home: home.as_deref().map(norm).unwrap_or_default(), protected: norm_all(protected), app_data: norm_all(app_data) }
     })
 }
 
@@ -160,6 +164,12 @@ mod tests {
         assert!(!protected(&local.join(r"pnpm\store")));
         // Ancestors of protected folders are not off limits, so projects in the home folder still count.
         assert!(!off_limits(&home));
+        // Tools in hidden home folders are never junk, but a project's own dot folders can be.
+        for rel in [".vscode/extensions/x/dist", ".cursor/extensions/x/out", ".nvm/versions/node/v22/lib/node_modules", ".cache/node/corepack/pnpm/dist", ".config/yarn/global/node_modules"] {
+            assert!(off_limits(&home.join(rel)), "{rel} should not be scanned");
+        }
+        assert!(!off_limits(&home.join("code/app/.next")));
+        assert!(!off_limits(&home.join("dotfiles.vscode/dist")));
     }
 
     #[cfg(target_os = "macos")]

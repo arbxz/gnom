@@ -1,6 +1,6 @@
 import { AlertTriangle, Container, Database, FileWarning, HardDrive, Play, Plus, RefreshCw, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { api } from "../lib/api";
+import { api, trashName } from "../lib/api";
 import { appVersion, checkForUpdates } from "../lib/updater";
 import { bytes } from "../lib/format";
 import type { DockerActionKind, DockerImage } from "../lib/types";
@@ -535,10 +535,10 @@ export function SettingsView() {
         </div>
         <div className="settings-row">
           <div className="body">
-            Use Recycle Bin
-            <small>Safer, but slow for huge folders like node_modules, and space is freed only when you empty the bin.</small>
+            Use {trashName}
+            <small>Safer, but slow for huge folders like node_modules, and space is freed only when you empty it.</small>
           </div>
-          <Switch label="Use Recycle Bin" on={settings.toTrash} onChange={(v) => updateSettings({ toTrash: v })} />
+          <Switch label={`Use ${trashName}`} on={settings.toTrash} onChange={(v) => updateSettings({ toTrash: v })} />
         </div>
       </div>
       <h2 className="list-title">About</h2>

@@ -12,6 +12,11 @@ import type {
 /** True inside the Tauri shell; false in a plain browser, where demo data stands in. */
 export const isNative = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
+export const isMac = typeof navigator !== "undefined" && navigator.userAgent.includes("Mac");
+
+/** What this system calls the place deleted files go. */
+export const trashName = isMac ? "Trash" : "Recycle Bin";
+
 async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
   const { invoke } = await import("@tauri-apps/api/core");
   return invoke<T>(cmd, args);

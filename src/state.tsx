@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { api } from "./lib/api";
+import { api, trashName } from "./lib/api";
 import { ago, bytes, daysSince } from "./lib/format";
 import { useSettings, type Settings } from "./lib/settings";
 import type { CleanProgress, DockerReport, Finding, ScanProgress, ScanResult, TreeNode } from "./lib/types";
@@ -186,7 +186,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         toast({
           kind: "ok",
           title: `Freed ${bytes(freed)}`,
-          body: `${ok.size} item${ok.size > 1 ? "s" : ""} ${settings.toTrash ? "moved to the Recycle Bin" : "deleted"}.`,
+          body: `${ok.size} item${ok.size > 1 ? "s" : ""} ${settings.toTrash ? `moved to the ${trashName}` : "deleted"}.`,
         });
       if (failed.length)
         toast({

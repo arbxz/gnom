@@ -370,6 +370,22 @@ pub fn global_findings(c: &Counters) -> Vec<Finding> {
         .collect()
 }
 
+/// A scan saved by an older version may list places gnom now leaves alone. Their folders stay on
+/// the disk map, measured but no longer marked as junk.
+pub fn forget_off_limits(r: &mut ScanResult) {
+    fn unmark(nodes: &mut [Node]) {
+        for n in nodes {
+            if n.category != Some(Category::Global) && crate::guard::off_limits(Path::new(&n.path)) {
+                n.category = None;
+            }
+            unmark(&mut n.children);
+        }
+    }
+    r.findings.retain(|f| f.category == Category::Global || !crate::guard::off_limits(Path::new(&f.path)));
+    r.projects.retain(|p| !crate::guard::off_limits(Path::new(&p.path)));
+    unmark(&mut r.tree);
+}
+
 pub fn run(opts: &ScanOptions, c: &Counters) -> ScanResult {
     let started = Instant::now();
     c.set_phase("Measuring package caches");
@@ -426,8 +442,35 @@ mod tests {
     use super::*;
 
     #[test]
+    fn saved_scans_forget_off_limits_places() {
+        let home = dirs::home_dir().unwrap();
+        let (app, mine) = (home.join(".vscode/extensions/x").to_string_lossy().into_owned(), home.join("code/app").to_string_lossy().into_owned());
+        let project = |path: &str| Project { path: path.into(), name: "x".into(), stacks: vec![], last_active: None, size: 1, has_git: true };
+        let node = |path: &str, category| Node { name: "x".into(), path: path.into(), size: 1, category, children: vec![] };
+        let finding = |path: &str, category| Finding {
+            path: path.into(), category, label: "x".into(), size: 1, files: 1, project: None, last_active: None,
+            regen: None, note: None, tags: vec![], top_files: vec![], command_id: None, command: None,
+        };
+        let mut r = ScanResult {
+            roots: vec![],
+            findings: vec![finding(&app, Category::Deps), finding(&app, Category::Global), finding(&mine, Category::Deps)],
+            projects: vec![project(&app), project(&mine)],
+            tree: vec![Node { children: vec![node(&app, Some(Category::Deps))], ..node(&mine, Some(Category::Deps)) }],
+            files: 0, bytes: 0, duration_ms: 0, finished_at: 0, cancelled: false,
+        };
+        forget_off_limits(&mut r);
+        assert_eq!(r.findings.len(), 2);
+        assert!(!r.findings.iter().any(|f| f.path == app && f.category != Category::Global));
+        assert_eq!(r.projects.len(), 1);
+        assert_eq!(r.projects[0].path, mine);
+        assert_eq!(r.tree[0].category, Some(Category::Deps));
+        assert_eq!(r.tree[0].children[0].category, None);
+    }
+
+    #[test]
     fn tracked_build_folders_are_not_junk() {
-        let base = std::env::temp_dir().join(format!("gnom-tracked-{}", std::process::id()));
+        // Not the temp folder: on Windows that is inside AppData, which the scanner skips.
+        let base = Path::new(env!("CARGO_MANIFEST_DIR")).join("target").join(format!("gnom-tracked-{}", std::process::id()));
         let git = |args: &[&str]| crate::docker::cmd("git").arg("-C").arg(&base).args(args).output().unwrap();
         for dir in ["build", "dist", "node_modules/pkg"] {
             fs::create_dir_all(base.join(dir)).unwrap();

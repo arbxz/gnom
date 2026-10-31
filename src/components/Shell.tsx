@@ -30,7 +30,6 @@ export function TitleBar() {
   return (
     <div className={`titlebar glass${isNative && isMac ? " mac" : ""}`}>
       <div className="brand" data-tauri-drag-region>
-        <Logo />
         gnom
       </div>
       {!isNative && <span className="chip accent">Demo data</span>}

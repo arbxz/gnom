@@ -29,9 +29,6 @@ export function TitleBar() {
   const { scanning, startScan, result } = useStore();
   return (
     <div className={`titlebar glass${isNative && isMac ? " mac" : ""}`}>
-      <div className="brand" data-tauri-drag-region>
-        gnom
-      </div>
       {!isNative && <span className="chip accent">Demo data</span>}
       <div className="drag" data-tauri-drag-region onMouseDown={(e) => !isMac && e.detail === 2 && api.window("toggleMaximize")} />
       {result && (
